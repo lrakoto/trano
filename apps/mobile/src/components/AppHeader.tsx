@@ -112,7 +112,7 @@ export function AppHeader() {
         {/* Panel */}
         <Animated.View style={[styles.drawer, { transform: [{ translateX }] }]}>
           {/* Frosted glass layers */}
-          <BlurView intensity={50} tint="dark" style={StyleSheet.absoluteFill} />
+          <BlurView intensity={65} tint="default" style={StyleSheet.absoluteFill} />
           <View style={styles.drawerTint} />
           {/* Drawer header */}
           <View style={styles.drawerHeader}>
@@ -188,7 +188,6 @@ const styles = StyleSheet.create({
     left:               0,
     width:              DRAWER_W,
     backgroundColor:   'transparent',
-    overflow:          'hidden',
     paddingTop:         STATUS_BAR + 20,
     paddingHorizontal:  24,
     shadowColor:       '#000',
@@ -201,7 +200,7 @@ const styles = StyleSheet.create({
   },
   drawerTint: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(22, 38, 30, 0.76)',
+    backgroundColor: 'rgba(20, 48, 34, 0.82)',
   },
   drawerHeader:   { marginBottom: 8 },
   drawerSubtitle: { color: 'rgba(255,255,255,0.55)', fontSize: 13, marginTop: 4 },
