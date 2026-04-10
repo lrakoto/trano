@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, ScrollView, TouchableOpacity,
-  StyleSheet, Alert, ActivityIndicator, KeyboardAvoidingView, Platform,
+  StyleSheet, Alert, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
+import { GlassButton } from '../components/GlassButton';
 import { COLORS, API_BASE_URL } from '../constants';
 import { REGIONS } from '@trano/shared';
 import type { RegionValue, ListingType, PropertyType } from '@trano/shared';
@@ -214,12 +215,12 @@ export function PostListingScreen() {
             placeholder="+261 34 XX XXX XX" />
         </Field>
 
-        <TouchableOpacity style={styles.button} onPress={handleSubmit} disabled={loading}>
-          {loading
-            ? <ActivityIndicator color={COLORS.white} />
-            : <Text style={styles.buttonText}>Manampy lisitra</Text>
-          }
-        </TouchableOpacity>
+        <GlassButton
+          label="Manampy lisitra"
+          onPress={handleSubmit}
+          loading={loading}
+          style={styles.button}
+        />
 
       </ScrollView>
     </KeyboardAvoidingView>
@@ -291,9 +292,5 @@ const styles = StyleSheet.create({
   chipActive:     { borderColor: COLORS.primary, backgroundColor: COLORS.primary + '0D' },
   chipText:       { fontSize: 13, color: COLORS.textMuted },
   chipTextActive: { color: COLORS.primary, fontWeight: '600' },
-  button: {
-    marginTop: 32, backgroundColor: COLORS.primary,
-    padding: 16, borderRadius: 12, alignItems: 'center',
-  },
-  buttonText: { color: COLORS.white, fontSize: 16, fontWeight: '700' },
+  button: { marginTop: 32 },
 });

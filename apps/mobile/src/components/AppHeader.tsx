@@ -3,6 +3,7 @@ import {
   View, Text, TouchableOpacity, StyleSheet, StatusBar, Platform,
   Modal, Animated, Pressable, Dimensions,
 } from 'react-native';
+import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -110,6 +111,9 @@ export function AppHeader() {
 
         {/* Panel */}
         <Animated.View style={[styles.drawer, { transform: [{ translateX }] }]}>
+          {/* Frosted glass layers */}
+          <BlurView intensity={50} tint="dark" style={StyleSheet.absoluteFill} />
+          <View style={styles.drawerTint} />
           {/* Drawer header */}
           <View style={styles.drawerHeader}>
             <View style={styles.logoWrap}>
@@ -178,19 +182,26 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.45)',
   },
   drawer: {
-    position:        'absolute',
-    top:              0,
-    bottom:           0,
-    left:             0,
-    width:            DRAWER_W,
-    backgroundColor: COLORS.primary,
-    paddingTop:       STATUS_BAR + 20,
-    paddingHorizontal: 24,
-    shadowColor:     '#000',
-    shadowOpacity:    0.25,
-    shadowRadius:    16,
-    shadowOffset:    { width: 4, height: 0 },
-    elevation:        12,
+    position:          'absolute',
+    top:                0,
+    bottom:             0,
+    left:               0,
+    width:              DRAWER_W,
+    backgroundColor:   'transparent',
+    overflow:          'hidden',
+    paddingTop:         STATUS_BAR + 20,
+    paddingHorizontal:  24,
+    shadowColor:       '#000',
+    shadowOpacity:      0.3,
+    shadowRadius:       20,
+    shadowOffset:      { width: 6, height: 0 },
+    elevation:          14,
+    borderRightWidth:   1,
+    borderRightColor:  'rgba(255,255,255,0.08)',
+  },
+  drawerTint: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(22, 38, 30, 0.76)',
   },
   drawerHeader:   { marginBottom: 8 },
   drawerSubtitle: { color: 'rgba(255,255,255,0.55)', fontSize: 13, marginTop: 4 },

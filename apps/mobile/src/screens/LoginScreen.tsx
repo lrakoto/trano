@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
-  StyleSheet, Alert, ActivityIndicator, KeyboardAvoidingView, Platform,
+  StyleSheet, Alert, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAuth } from '../context/AuthContext';
+import { GlassButton } from '../components/GlassButton';
 import { COLORS } from '../constants';
 import type { RootStackParamList } from '../navigation';
 
@@ -63,12 +64,12 @@ export function LoginScreen({ navigation }: Props) {
           autoComplete="password"
         />
 
-        <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
-          {loading
-            ? <ActivityIndicator color={COLORS.white} />
-            : <Text style={styles.buttonText}>Miditra</Text>
-          }
-        </TouchableOpacity>
+        <GlassButton
+          label="Miditra"
+          onPress={handleLogin}
+          loading={loading}
+          style={styles.button}
+        />
 
         <TouchableOpacity style={styles.link} onPress={() => navigation.replace('Register')}>
           <Text style={styles.linkText}>Tsy manana kaonty? <Text style={styles.linkBold}>Mamorona</Text></Text>
@@ -88,11 +89,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.white, borderWidth: 1, borderColor: COLORS.border,
     borderRadius: 8, padding: 14, fontSize: 15, color: COLORS.text,
   },
-  button: {
-    marginTop: 28, backgroundColor: COLORS.primary,
-    padding: 16, borderRadius: 12, alignItems: 'center',
-  },
-  buttonText: { color: COLORS.white, fontSize: 16, fontWeight: '700' },
+  button: { marginTop: 28 },
   link:        { marginTop: 20, alignItems: 'center' },
   linkText:    { fontSize: 14, color: COLORS.textMuted },
   linkBold:    { color: COLORS.primary, fontWeight: '700' },

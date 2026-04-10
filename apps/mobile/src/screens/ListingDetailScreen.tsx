@@ -4,8 +4,8 @@ import {
   StyleSheet, Linking, ActivityIndicator, Dimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { GlassButton } from '../components/GlassButton';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { Listing } from '@trano/shared';
 import { SatelliteThumb } from '../components/SatelliteThumb';
@@ -127,23 +127,10 @@ export function ListingDetailScreen({ route, navigation }: Props) {
       {/* Floating frosted glass pill button */}
       {waPhone && (
         <View style={[styles.bottomBar, { paddingBottom: Math.max(0, insets.bottom - 4) }]}>
-          <TouchableOpacity onPress={handleWhatsApp} activeOpacity={0.82} style={styles.contactShadow}>
-            <LinearGradient
-              colors={['rgba(255,255,255,0.92)', 'rgba(235,235,235,0.82)']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 0, y: 1 }}
-              style={styles.contactButton}
-            >
-              {/* Top gloss sheen */}
-              <LinearGradient
-                colors={['rgba(255,255,255,0.7)', 'rgba(255,255,255,0)']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 0, y: 1 }}
-                style={styles.gloss}
-              />
-              <Text style={styles.contactButtonText}>Mifandraisa amin'i WhatsApp</Text>
-            </LinearGradient>
-          </TouchableOpacity>
+          <GlassButton
+            label="Mifandraisa amin'i WhatsApp"
+            onPress={handleWhatsApp}
+          />
         </View>
       )}
     </View>
@@ -242,37 +229,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop:        12,
     // transparent — content scrolls through underneath
-  },
-  contactShadow: {
-    borderRadius:  999,
-    shadowColor:   '#000',
-    shadowOpacity:  0.14,
-    shadowRadius:   14,
-    shadowOffset:  { width: 0, height: 5 },
-    elevation:      7,
-  },
-  contactButton: {
-    borderRadius:    999,
-    overflow:        'hidden',
-    paddingVertical:  17,
-    alignItems:      'center',
-    justifyContent:  'center',
-    borderWidth:      1,
-    borderColor:     'rgba(255,255,255,0.9)',
-  },
-  gloss: {
-    position: 'absolute',
-    top:       0,
-    left:      0,
-    right:     0,
-    height:   '50%',
-    borderTopLeftRadius:  999,
-    borderTopRightRadius: 999,
-  },
-  contactButtonText: {
-    color:         COLORS.primary,
-    fontSize:       16,
-    fontWeight:    '800',
-    letterSpacing:  0.3,
   },
 });
