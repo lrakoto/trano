@@ -3,13 +3,13 @@ import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   ActivityIndicator, TextInput, Dimensions, Keyboard, Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapView, { Marker, Callout } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { Listing } from '@trano/shared';
-import { useAuth } from '../context/AuthContext';
 import { AppHeader } from '../components/AppHeader';
 import { SatelliteThumb } from '../components/SatelliteThumb';
 import { API_BASE_URL, COLORS, isInMadagascar } from '../constants';
@@ -28,8 +28,9 @@ const ANTANANARIVO = {
 
 export function HomeScreen() {
   const navigation = useNavigation<Nav>();
-  const { user }   = useAuth();
+  const insets     = useSafeAreaInsets();
   const mapRef     = useRef<MapView>(null);
+  const TAB_BAR_H  = 38 + insets.bottom;
 
   const [listings,     setListings]     = useState<Listing[]>([]);
   const [filtered,     setFiltered]     = useState<Listing[]>([]);
@@ -153,7 +154,7 @@ export function HomeScreen() {
       </View>
 
       {/* ── Search bar ────────────────────────────────────── */}
-      <View style={[styles.searchBar, { bottom: kbHeight }]}>
+      <View style={[styles.searchBar, { bottom: kbHeight > 0 ? kbHeight - TAB_BAR_H : 0 }]}>
         <View style={styles.searchInputWrap}>
           <Ionicons name="search" size={15} color={COLORS.textMuted} />
           <TextInput
@@ -168,14 +169,6 @@ export function HomeScreen() {
         </View>
       </View>
 
-      {/* ── FAB ───────────────────────────────────────────── */}
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => navigation.navigate(user ? 'PostListing' : 'Login')}
-        activeOpacity={0.85}
-      >
-        <Ionicons name="add" size={28} color={COLORS.surface} />
-      </TouchableOpacity>
     </View>
   );
 }
@@ -300,21 +293,6 @@ const styles = StyleSheet.create({
     padding:  0,
   },
 
-  fab: {
-    position:        'absolute',
-    bottom:           68,
-    right:            16,
-    width:            50,
-    height:           50,
-    borderRadius:     25,
-    backgroundColor: COLORS.primary,
-    alignItems:      'center',
-    justifyContent:  'center',
-    shadowColor:     '#000',
-    shadowOpacity:    0.2,
-    shadowRadius:     6,
-    elevation:        5,
-  },
 });
 
 const IMAGE_SIZE = 88;
