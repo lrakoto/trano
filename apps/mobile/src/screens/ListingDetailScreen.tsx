@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { Listing } from '@trano/shared';
@@ -124,20 +125,22 @@ export function ListingDetailScreen({ route, navigation }: Props) {
         </View>
       </ScrollView>
 
-      {/* Fixed contact button at bottom */}
+      {/* Floating frosted glass pill button */}
       {waPhone && (
-        <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 14 }]}>
-          <TouchableOpacity onPress={handleWhatsApp} activeOpacity={0.88} style={styles.contactShadow}>
-            <LinearGradient
-              colors={['#FFE07A', '#E8A000']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 0, y: 1 }}
-              style={styles.contactButton}
-            >
-              {/* Inner gloss overlay */}
+        <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 12 }]}>
+          <TouchableOpacity onPress={handleWhatsApp} activeOpacity={0.82} style={styles.contactShadow}>
+            <BlurView intensity={60} tint="light" style={styles.contactBlur}>
+              {/* Frosted tint layer */}
+              <LinearGradient
+                colors={['rgba(255,255,255,0.38)', 'rgba(255,255,255,0.14)']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0, y: 1 }}
+                style={StyleSheet.absoluteFillObject}
+              />
+              {/* Top rim highlight */}
               <View style={styles.gloss} />
               <Text style={styles.contactButtonText}>Mifandraisa amin'i WhatsApp</Text>
-            </LinearGradient>
+            </BlurView>
           </TouchableOpacity>
         </View>
       )}
@@ -228,52 +231,48 @@ const styles = StyleSheet.create({
   ownerName:    { fontSize: 15, fontWeight: '700', color: COLORS.text },
   verified:     { fontSize: 12, color: COLORS.primaryLight, marginTop: 1 },
 
-  // Fixed bottom bar
+  // Floating frosted glass pill
   bottomBar: {
     position:          'absolute',
     bottom:             0,
     left:               0,
     right:              0,
-    backgroundColor:   COLORS.surface,
-    paddingHorizontal: 20,
-    paddingTop:        14,
-    borderTopWidth:     1,
-    borderTopColor:    COLORS.border,
-    shadowColor:       '#000',
-    shadowOpacity:      0.06,
-    shadowRadius:       8,
-    elevation:          8,
+    paddingHorizontal: 24,
+    paddingTop:        12,
+    // transparent — content scrolls through underneath
   },
   contactShadow: {
-    borderRadius:   14,
-    shadowColor:    '#C07800',
-    shadowOpacity:   0.45,
-    shadowRadius:    10,
-    shadowOffset:   { width: 0, height: 4 },
-    elevation:       6,
+    borderRadius:  999,
+    shadowColor:   '#000',
+    shadowOpacity:  0.18,
+    shadowRadius:   16,
+    shadowOffset:  { width: 0, height: 6 },
+    elevation:      8,
   },
-  contactButton: {
-    borderRadius:   14,
-    paddingVertical: 16,
-    alignItems:     'center',
+  contactBlur: {
+    borderRadius:   999,
     overflow:       'hidden',
+    paddingVertical: 17,
+    alignItems:     'center',
+    justifyContent: 'center',
     borderWidth:     1,
-    borderColor:    'rgba(255,255,255,0.35)',
+    borderColor:    'rgba(255,255,255,0.55)',
+    backgroundColor: 'rgba(255,255,255,0.15)',
   },
   gloss: {
     position:        'absolute',
     top:              0,
     left:             0,
     right:            0,
-    height:          '50%',
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    borderTopLeftRadius:  13,
-    borderTopRightRadius: 13,
+    height:           '48%',
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    borderTopLeftRadius:  999,
+    borderTopRightRadius: 999,
   },
   contactButtonText: {
-    color:      COLORS.primary,
-    fontSize:   16,
-    fontWeight: '800',
-    letterSpacing: 0.2,
+    color:         COLORS.primary,
+    fontSize:       16,
+    fontWeight:    '800',
+    letterSpacing:  0.3,
   },
 });
