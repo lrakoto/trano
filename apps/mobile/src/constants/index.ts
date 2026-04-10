@@ -1,8 +1,13 @@
 import Constants from 'expo-constants';
 
-// On a physical device, localhost points to the phone — use the Expo dev
-// server's host IP instead so the app can reach the Mac running the API.
-const devHost = Constants.expoConfig?.hostUri?.split(':')[0] ?? 'localhost';
+// On a physical device, localhost points to the phone — resolve the Mac's
+// LAN IP from whichever Expo manifest field is available in this SDK version.
+const devHost: string =
+  (Constants as any).expoGoConfig?.debuggerHost?.split(':')[0] ??
+  Constants.expoConfig?.hostUri?.split(':')[0] ??
+  (Constants as any).manifest?.debuggerHost?.split(':')[0] ??
+  (Constants as any).manifest2?.extra?.expoGo?.debuggerHost?.split(':')[0] ??
+  'localhost';
 
 export const API_BASE_URL = __DEV__
   ? `http://${devHost}:3000`
@@ -13,11 +18,11 @@ export const WHATSAPP_PREFILL = (listingTitle: string) =>
   `Salama! Mahafinaritra ahy ny antsoinao momba ny lisitry ny: ${listingTitle}`;
 
 export const COLORS = {
-  // Brand
-  primary:       '#0F2D1F', // very deep green — header, CTAs
-  primaryMid:    '#1B4332', // mid green — accents, active states
-  primaryLight:  '#40916C', // light green — tags, verified badges
-  accent:        '#F0A500', // warm amber — price highlights, badges
+  // Brand — desaturated slate-green palette
+  primary:       '#1A2B24', // dark slate green — header, CTAs, dark sections
+  primaryMid:    '#2C4238', // muted forest green — accents, active states
+  primaryLight:  '#4A7260', // sage green — tags, verified badges
+  accent:        '#E8A000', // warm amber — price highlights, badges
 
   // Neutrals
   background:    '#F5F5F0', // warm off-white — screen backgrounds
