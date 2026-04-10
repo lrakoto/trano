@@ -3,7 +3,6 @@ import {
   View, Text, TouchableOpacity, StyleSheet,
   Animated, Pressable, Dimensions, StatusBar, Platform,
 } from 'react-native';
-import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useDrawer } from '../context/DrawerContext';
@@ -62,9 +61,11 @@ export function DrawerOverlay({ navRef }: Props) {
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
-      {/* Backdrop with blur */}
-      <Animated.View style={[StyleSheet.absoluteFill, { opacity: backdropOp }]} pointerEvents="auto">
-        <BlurView intensity={18} tint="dark" style={StyleSheet.absoluteFill} />
+      {/* Backdrop — dark scrim */}
+      <Animated.View
+        style={[StyleSheet.absoluteFill, styles.backdrop, { opacity: backdropOp }]}
+        pointerEvents="auto"
+      >
         <Pressable style={StyleSheet.absoluteFill} onPress={closeDrawer} />
       </Animated.View>
 
@@ -117,6 +118,9 @@ export function DrawerOverlay({ navRef }: Props) {
 }
 
 const styles = StyleSheet.create({
+  backdrop: {
+    backgroundColor: 'rgba(8, 20, 14, 0.72)',
+  },
   drawer: {
     position:          'absolute',
     top:                0,

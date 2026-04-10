@@ -17,8 +17,7 @@ export default function App() {
         <DrawerProvider>
           <NavigationContainer ref={navRef}>
             <RootNavigator />
-            {/* DrawerOverlay lives inside NavigationContainer so BlurView
-                shares the same UIWindow as the app content — blur works */}
+            {/* DrawerOverlay inside NavigationContainer — same view tree as app content */}
             <DrawerOverlay navRef={navRef} />
           </NavigationContainer>
         </DrawerProvider>
