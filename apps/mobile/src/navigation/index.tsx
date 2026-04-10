@@ -1,5 +1,6 @@
 import React from 'react';
 import { ActivityIndicator, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
@@ -55,6 +56,7 @@ const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab   = createBottomTabNavigator<TabParamList>();
 
 function TabNavigator() {
+  const insets = useSafeAreaInsets();
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -62,17 +64,18 @@ function TabNavigator() {
         tabBarActiveTintColor:   COLORS.primaryMid,
         tabBarInactiveTintColor: COLORS.textMuted,
         tabBarStyle: {
-          backgroundColor: COLORS.surface,
-          borderTopColor:  COLORS.border,
-          height:          60,
-          paddingBottom:   8,
-          paddingTop:      6,
+          backgroundColor:   COLORS.surface,
+          borderTopColor:    COLORS.border,
+          height:             54 + insets.bottom,
+          paddingBottom:      insets.bottom + 6,
+          paddingTop:         6,
+          paddingHorizontal:  4,
         },
         tabBarLabelStyle: {
           fontSize:   10,
           fontWeight: '600',
         },
-        tabBarIcon: ({ focused, color, size }) => {
+        tabBarIcon: ({ focused, color }) => {
           const icons = TAB_ICONS[route.name as keyof TabParamList];
           return (
             <Ionicons

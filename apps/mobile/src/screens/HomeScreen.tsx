@@ -252,7 +252,7 @@ const styles = StyleSheet.create({
   calloutPrice: { fontSize: 12, color: COLORS.primaryMid, marginTop: 3 },
   calloutCta:   { fontSize: 11, color: COLORS.primaryLight, marginTop: 5, fontWeight: '600' },
 
-  listWrapper:  { flex: 1, marginBottom: 58, backgroundColor: COLORS.background },
+  listWrapper:  { flex: 1, marginBottom: 54, backgroundColor: COLORS.background },
   loader:       { marginTop: 30 },
   list:         { paddingHorizontal: 14, paddingTop: 10, paddingBottom: 4 },
   emptyWrap:    { alignItems: 'center', marginTop: 40, gap: 8 },

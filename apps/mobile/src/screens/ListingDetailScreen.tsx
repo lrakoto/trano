@@ -3,9 +3,13 @@ import {
   View, Text, ScrollView, TouchableOpacity,
   StyleSheet, Linking, ActivityIndicator, Dimensions,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { Listing } from '@trano/shared';
 import { SatelliteThumb } from '../components/SatelliteThumb';
+import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL, COLORS, WHATSAPP_PREFILL } from '../constants';
 import type { RootStackParamList } from '../navigation';
 
@@ -13,10 +17,13 @@ type Props = NativeStackScreenProps<RootStackParamList, 'ListingDetail'>;
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
-export function ListingDetailScreen({ route }: Props) {
+export function ListingDetailScreen({ route, navigation }: Props) {
   const { listingId } = route.params;
-  const [listing, setListing] = useState<Listing | null>(null);
-  const [loading, setLoading]  = useState(true);
+  const { user } = useAuth();
+  const insets = useSafeAreaInsets();
+  const [listing, setListing]   = useState<Listing | null>(null);
+  const [loading, setLoading]   = useState(true);
+  const [isSaved, setIsSaved]   = useState(false);
 
   useEffect(() => {
     fetch(`${API_BASE_URL}/listings/${listingId}`)
@@ -34,6 +41,14 @@ export function ListingDetailScreen({ route }: Props) {
     if (!waPhone) return;
     const msg = encodeURIComponent(WHATSAPP_PREFILL(listing.title));
     Linking.openURL(`https://wa.me/${waPhone.replace(/\D/g, '')}?text=${msg}`);
+  };
+
+  const handleFavorite = () => {
+    if (!user) {
+      navigation.navigate('Login');
+      return;
+    }
+    setIsSaved((prev) => !prev);
   };
 
   return (
@@ -54,10 +69,19 @@ export function ListingDetailScreen({ route }: Props) {
             delta={0.0015}
           />
           <View style={styles.satelliteOverlay}>
-            <Text style={styles.satelliteTag}>
-              {listing.listingType === 'RENT' ? 'Hofana' : 'Amidy'}
-            </Text>
-            <Text style={styles.satelliteTag}>{listing.propertyType}</Text>
+            <View style={styles.satelliteTags}>
+              <Text style={styles.satelliteTag}>
+                {listing.listingType === 'RENT' ? 'Hofana' : 'Amidy'}
+              </Text>
+              <Text style={styles.satelliteTag}>{listing.propertyType}</Text>
+            </View>
+            <TouchableOpacity style={styles.heartButton} onPress={handleFavorite} activeOpacity={0.8}>
+              <Ionicons
+                name={isSaved ? 'heart' : 'heart-outline'}
+                size={20}
+                color={isSaved ? '#FF4D6D' : '#fff'}
+              />
+            </TouchableOpacity>
           </View>
         </View>
 
@@ -102,9 +126,18 @@ export function ListingDetailScreen({ route }: Props) {
 
       {/* Fixed contact button at bottom */}
       {waPhone && (
-        <View style={styles.bottomBar}>
-          <TouchableOpacity style={styles.contactButton} onPress={handleWhatsApp} activeOpacity={0.85}>
-            <Text style={styles.contactButtonText}>Mifandraisa amin'i WhatsApp</Text>
+        <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 14 }]}>
+          <TouchableOpacity onPress={handleWhatsApp} activeOpacity={0.88} style={styles.contactShadow}>
+            <LinearGradient
+              colors={['#FFE07A', '#E8A000']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0, y: 1 }}
+              style={styles.contactButton}
+            >
+              {/* Inner gloss overlay */}
+              <View style={styles.gloss} />
+              <Text style={styles.contactButtonText}>Mifandraisa amin'i WhatsApp</Text>
+            </LinearGradient>
           </TouchableOpacity>
         </View>
       )}
@@ -129,12 +162,15 @@ const styles = StyleSheet.create({
   // Satellite
   satellite:        { position: 'relative' },
   satelliteOverlay: {
-    position:      'absolute',
-    bottom:         10,
-    left:           10,
-    flexDirection: 'row',
-    gap:            6,
+    position:        'absolute',
+    bottom:           10,
+    left:             10,
+    right:            10,
+    flexDirection:   'row',
+    alignItems:      'center',
+    justifyContent:  'space-between',
   },
+  satelliteTags: { flexDirection: 'row', gap: 6 },
   satelliteTag: {
     backgroundColor: 'rgba(0,0,0,0.55)',
     color:           '#fff',
@@ -144,6 +180,14 @@ const styles = StyleSheet.create({
     paddingVertical:   4,
     borderRadius:      6,
     overflow:         'hidden',
+  },
+  heartButton: {
+    width:           36,
+    height:          36,
+    borderRadius:    18,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    alignItems:      'center',
+    justifyContent:  'center',
   },
 
   // Body
@@ -192,7 +236,7 @@ const styles = StyleSheet.create({
     right:              0,
     backgroundColor:   COLORS.surface,
     paddingHorizontal: 20,
-    paddingVertical:   14,
+    paddingTop:        14,
     borderTopWidth:     1,
     borderTopColor:    COLORS.border,
     shadowColor:       '#000',
@@ -200,15 +244,36 @@ const styles = StyleSheet.create({
     shadowRadius:       8,
     elevation:          8,
   },
+  contactShadow: {
+    borderRadius:   14,
+    shadowColor:    '#C07800',
+    shadowOpacity:   0.45,
+    shadowRadius:    10,
+    shadowOffset:   { width: 0, height: 4 },
+    elevation:       6,
+  },
   contactButton: {
-    backgroundColor: COLORS.accent,
-    padding:          16,
-    borderRadius:     14,
-    alignItems:       'center',
+    borderRadius:   14,
+    paddingVertical: 16,
+    alignItems:     'center',
+    overflow:       'hidden',
+    borderWidth:     1,
+    borderColor:    'rgba(255,255,255,0.35)',
+  },
+  gloss: {
+    position:        'absolute',
+    top:              0,
+    left:             0,
+    right:            0,
+    height:          '50%',
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderTopLeftRadius:  13,
+    borderTopRightRadius: 13,
   },
   contactButtonText: {
     color:      COLORS.primary,
     fontSize:   16,
     fontWeight: '800',
+    letterSpacing: 0.2,
   },
 });
