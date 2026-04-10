@@ -9,7 +9,7 @@ export function SavedScreen() {
     <View style={styles.container}>
       <AppHeader />
       <View style={styles.body}>
-        <Ionicons name="heart-outline" size={52} color={COLORS.border} />
+        <Ionicons name="heart-outline" size={52} color={COLORS.primaryLight} />
         <Text style={styles.title}>Trano Voatahiry</Text>
         <Text style={styles.sub}>
           Ny trano tianao dia hiseho eto.{'\n'}Tsindrio ny ♡ amin'ny lisitra mba hitahiry azy.

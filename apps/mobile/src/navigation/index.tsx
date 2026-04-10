@@ -59,14 +59,14 @@ function TabNavigator() {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarActiveTintColor:   COLORS.accent,
-        tabBarInactiveTintColor: '#ffffff55',
+        tabBarActiveTintColor:   COLORS.primaryMid,
+        tabBarInactiveTintColor: COLORS.textMuted,
         tabBarStyle: {
-          backgroundColor:  COLORS.primary,
-          borderTopColor:   '#ffffff12',
-          height:           60,
-          paddingBottom:    8,
-          paddingTop:       6,
+          backgroundColor: COLORS.surface,
+          borderTopColor:  COLORS.border,
+          height:          60,
+          paddingBottom:   8,
+          paddingTop:      6,
         },
         tabBarLabelStyle: {
           fontSize:   10,

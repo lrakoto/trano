@@ -19,16 +19,11 @@ export function AppHeader({ onMenuPress }: Props) {
   const navigation = useNavigation<Nav>();
   const { user }   = useAuth();
 
-  const handleUserPress = () => {
-    navigation.navigate(user ? 'Login' : 'Login');
-    // TODO: if user → navigate to full profile/settings modal
-  };
-
   return (
     <View style={styles.container}>
       {/* Left — hamburger */}
       <TouchableOpacity style={styles.iconButton} onPress={onMenuPress} hitSlop={8}>
-        <Ionicons name="menu" size={24} color={COLORS.surface} />
+        <Ionicons name="menu" size={24} color={COLORS.primary} />
       </TouchableOpacity>
 
       {/* Center — logo */}
@@ -38,13 +33,17 @@ export function AppHeader({ onMenuPress }: Props) {
       </View>
 
       {/* Right — user */}
-      <TouchableOpacity style={styles.iconButton} onPress={handleUserPress} hitSlop={8}>
+      <TouchableOpacity
+        style={styles.iconButton}
+        onPress={() => navigation.navigate(user ? 'Login' : 'Login')}
+        hitSlop={8}
+      >
         {user ? (
           <View style={styles.avatarBadge}>
             <Text style={styles.avatarInitial}>{user.name[0].toUpperCase()}</Text>
           </View>
         ) : (
-          <Ionicons name="person-circle-outline" size={26} color={COLORS.surface} />
+          <Ionicons name="person-circle-outline" size={26} color={COLORS.primary} />
         )}
       </TouchableOpacity>
     </View>
@@ -55,13 +54,15 @@ const STATUS_BAR_HEIGHT = Platform.OS === 'ios' ? 44 : StatusBar.currentHeight ?
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: COLORS.primary,
-    paddingTop:       STATUS_BAR_HEIGHT + 10,
-    paddingBottom:    14,
-    paddingHorizontal: 16,
-    flexDirection:    'row',
-    alignItems:       'center',
-    justifyContent:   'space-between',
+    backgroundColor:   COLORS.surface,
+    paddingTop:         STATUS_BAR_HEIGHT + 8,
+    paddingBottom:      12,
+    paddingHorizontal:  16,
+    flexDirection:     'row',
+    alignItems:        'center',
+    justifyContent:    'space-between',
+    borderBottomWidth:  1,
+    borderBottomColor: COLORS.border,
   },
   iconButton: {
     width: 36,
@@ -73,9 +74,9 @@ const styles = StyleSheet.create({
     gap:           3,
   },
   logoText: {
-    fontSize:     26,
-    fontWeight:   '800',
-    color:        COLORS.surface,
+    fontSize:      26,
+    fontWeight:    '800',
+    color:         COLORS.primary,
     letterSpacing: -0.5,
   },
   logoDot: {
@@ -89,12 +90,12 @@ const styles = StyleSheet.create({
     width:           30,
     height:          30,
     borderRadius:    15,
-    backgroundColor: COLORS.accent,
+    backgroundColor: COLORS.primaryMid,
     alignItems:      'center',
     justifyContent:  'center',
   },
   avatarInitial: {
-    color:      COLORS.primary,
+    color:      COLORS.surface,
     fontSize:   13,
     fontWeight: '800',
   },
