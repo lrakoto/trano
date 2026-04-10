@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
-  StyleSheet, Linking, ActivityIndicator,
+  StyleSheet, Linking, ActivityIndicator, Dimensions,
 } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { Listing } from '@trano/shared';
+import { SatelliteThumb } from '../components/SatelliteThumb';
 import { API_BASE_URL, COLORS, WHATSAPP_PREFILL } from '../constants';
 import type { RootStackParamList } from '../navigation';
 
@@ -36,6 +37,23 @@ export function ListingDetailScreen({ route }: Props) {
 
   return (
     <ScrollView style={styles.container}>
+      {/* Full-width satellite header */}
+      <View style={styles.satellite}>
+        <SatelliteThumb
+          latitude={listing.latitude}
+          longitude={listing.longitude}
+          width={Dimensions.get('window').width}
+          height={220}
+          delta={0.003}
+        />
+        <View style={styles.satelliteOverlay}>
+          <Text style={styles.satelliteTag}>
+            {listing.listingType === 'RENT' ? 'Hofana' : 'Amidy'}
+          </Text>
+          <Text style={styles.satelliteTag}>{listing.propertyType}</Text>
+        </View>
+      </View>
+
       <View style={styles.body}>
         <View style={styles.tagRow}>
           <Text style={styles.tag}>{listing.listingType === 'RENT' ? 'Hofana' : 'Amidy'}</Text>
@@ -80,11 +98,32 @@ const styles = StyleSheet.create({
   container:   { flex: 1, backgroundColor: COLORS.background },
   loader:      { flex: 1 },
   error:       { textAlign: 'center', marginTop: 40, color: COLORS.textMuted },
+
+  // Satellite header
+  satellite:        { position: 'relative' },
+  satelliteOverlay: {
+    position:    'absolute',
+    bottom:       10,
+    left:         10,
+    flexDirection: 'row',
+    gap:           6,
+  },
+  satelliteTag: {
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    color:           '#fff',
+    fontSize:         11,
+    fontWeight:      '700',
+    paddingHorizontal: 8,
+    paddingVertical:   4,
+    borderRadius:      6,
+    overflow:         'hidden',
+  },
+
   body:        { padding: 20 },
   tagRow:      { flexDirection: 'row', gap: 8, marginBottom: 12 },
   tag: {
     paddingHorizontal: 8, paddingVertical: 3, borderRadius: 4,
-    backgroundColor: COLORS.secondary + '22', color: COLORS.secondary, fontSize: 12,
+    backgroundColor: COLORS.primaryLight + '22', color: COLORS.primaryLight, fontSize: 12,
   },
   title:       { fontSize: 22, fontWeight: '700', color: COLORS.text },
   price:       { fontSize: 20, fontWeight: '700', color: COLORS.primary, marginTop: 8 },
@@ -98,10 +137,10 @@ const styles = StyleSheet.create({
   description: { fontSize: 15, color: COLORS.text, lineHeight: 22, marginTop: 16 },
   ownerRow:    { flexDirection: 'row', alignItems: 'center', marginTop: 20, gap: 8 },
   ownerName:   { fontSize: 15, fontWeight: '600', color: COLORS.text },
-  verified:    { fontSize: 13, color: COLORS.secondary },
+  verified:    { fontSize: 13, color: COLORS.primaryLight },
   waButton: {
     marginHorizontal: 20, marginTop: 8, padding: 16,
     borderRadius: 12, backgroundColor: COLORS.whatsapp, alignItems: 'center',
   },
-  waButtonText: { color: COLORS.white, fontSize: 16, fontWeight: '700' },
+  waButtonText: { color: COLORS.surface, fontSize: 16, fontWeight: '700' },
 });

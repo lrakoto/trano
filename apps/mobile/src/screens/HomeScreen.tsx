@@ -11,6 +11,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { Listing } from '@trano/shared';
 import { useAuth } from '../context/AuthContext';
 import { AppHeader } from '../components/AppHeader';
+import { SatelliteThumb } from '../components/SatelliteThumb';
 import { API_BASE_URL, COLORS, isInMadagascar } from '../constants';
 import type { RootStackParamList } from '../navigation';
 
@@ -171,9 +172,14 @@ export function HomeScreen() {
 function ListingCard({ listing, onPress }: { listing: Listing; onPress: () => void }) {
   return (
     <TouchableOpacity style={card.container} onPress={onPress} activeOpacity={0.8}>
-      {/* Square image */}
+      {/* Square satellite thumbnail */}
       <View style={card.image}>
-        <Ionicons name="home-outline" size={22} color={COLORS.border} />
+        <SatelliteThumb
+          latitude={listing.latitude}
+          longitude={listing.longitude}
+          width={IMAGE_SIZE}
+          height={IMAGE_SIZE}
+        />
         <View style={card.typePill}>
           <Text style={card.typePillText}>
             {listing.listingType === 'RENT' ? 'Hofana' : 'Amidy'}
