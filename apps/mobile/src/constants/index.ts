@@ -1,5 +1,11 @@
+import Constants from 'expo-constants';
+
+// On a physical device, localhost points to the phone — use the Expo dev
+// server's host IP instead so the app can reach the Mac running the API.
+const devHost = Constants.expoConfig?.hostUri?.split(':')[0] ?? 'localhost';
+
 export const API_BASE_URL = __DEV__
-  ? 'http://localhost:3000'
+  ? `http://${devHost}:3000`
   : 'https://api.trano.mg';
 
 // Pre-filled WhatsApp message in Malagasy
