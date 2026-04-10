@@ -1,0 +1,26 @@
+export const REGIONS = [
+  { value: 'ANALAMANGA',         label: 'Analamanga',          capital: 'Antananarivo' },
+  { value: 'VAKINANKARATRA',     label: 'Vakinankaratra',      capital: 'Antsirabe' },
+  { value: 'ITASY',              label: 'Itasy',               capital: 'Miarinarivo' },
+  { value: 'BONGOLAVA',          label: 'Bongolava',           capital: 'Tsiroanomandidy' },
+  { value: 'MATSIATRA_AMBONY',   label: 'Matsiatra Ambony',    capital: 'Fianarantsoa' },
+  { value: 'AMORON_I_MANIA',     label: "Amoron'i Mania",      capital: 'Ambositra' },
+  { value: 'IHOROMBE',           label: 'Ihorombe',            capital: 'Ihosy' },
+  { value: 'ATSIMO_ATSINANANA',  label: 'Atsimo-Atsinanana',   capital: 'Farafangana' },
+  { value: 'ATSINANANA',         label: 'Atsinanana',          capital: 'Toamasina' },
+  { value: 'ANALANJIROFO',       label: 'Analanjirofo',        capital: 'Fenoarivo Atsinanana' },
+  { value: 'ALAOTRA_MANGORO',    label: 'Alaotra-Mangoro',     capital: 'Ambatondrazaka' },
+  { value: 'BOENY',              label: 'Boeny',               capital: 'Mahajanga' },
+  { value: 'SOFIA',              label: 'Sofia',               capital: 'Antsohihy' },
+  { value: 'BETSIBOKA',          label: 'Betsiboka',           capital: 'Maevatanana' },
+  { value: 'MELAKY',             label: 'Melaky',              capital: 'Maintirano' },
+  { value: 'ATSIMO_ANDREFANA',   label: 'Atsimo-Andrefana',    capital: 'Toliara' },
+  { value: 'ANDROY',             label: 'Androy',              capital: 'Ambovombe' },
+  { value: 'ANOSY',              label: 'Anosy',               capital: 'Tolagnaro' },
+  { value: 'MENABE',             label: 'Menabe',              capital: 'Morondava' },
+  { value: 'DIANA',              label: 'Diana',               capital: 'Antsiranana' },
+  { value: 'SAVA',               label: 'Sava',                capital: 'Sambava' },
+  { value: 'VATOVAVY_FITOVINANY',label: 'Vatovavy-Fitovinany', capital: 'Manakara' },
+] as const;
+
+export type RegionValue = (typeof REGIONS)[number]['value'];

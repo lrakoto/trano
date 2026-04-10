@@ -1,0 +1,190 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ────────────────────────────────────────────────────────────────────
+
+enum Role {
+  BUYER
+  SELLER
+  AGENT
+  ADMIN
+}
+
+enum ListingType {
+  RENT
+  SALE
+}
+
+enum PropertyType {
+  HOUSE
+  APARTMENT
+  LAND
+  COMMERCIAL
+}
+
+enum ListingStatus {
+  ACTIVE
+  SOLD
+  RENTED
+  INACTIVE
+  UNDER_REVIEW
+}
+
+// All 22 official regions of Madagascar
+enum Region {
+  ANALAMANGA
+  VAKINANKARATRA
+  ITASY
+  BONGOLAVA
+  MATSIATRA_AMBONY
+  AMORON_I_MANIA
+  IHOROMBE
+  ATSIMO_ATSINANANA
+  ATSINANANA
+  ANALANJIROFO
+  ALAOTRA_MANGORO
+  BOENY
+  SOFIA
+  BETSIBOKA
+  MELAKY
+  ATSIMO_ANDREFANA
+  ANDROY
+  ANOSY
+  MENABE
+  DIANA
+  SAVA
+  VATOVAVY_FITOVINANY
+}
+
+// ─── Models ───────────────────────────────────────────────────────────────────
+
+model User {
+  id               String    @id @default(cuid())
+  name             String
+  // Phone is the primary identifier (email is optional) — mirrors local usage
+  phone            String    @unique
+  email            String?   @unique
+  whatsappPhone    String?
+  passwordHash     String
+  role             Role      @default(BUYER)
+  isVerified       Boolean   @default(false)
+  verifiedAt       DateTime?
+  profilePicture   String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  listings         Listing[]
+  favorites        Favorite[]
+  sentMessages     Message[]  @relation("SentMessages")
+  receivedMessages Message[]  @relation("ReceivedMessages")
+  reports          Report[]
+}
+
+model Listing {
+  id               String        @id @default(cuid())
+  title            String
+  description      String
+  // Price stored in MGA (Malagasy Ariary) as canonical value
+  priceMga         BigInt
+  // USD snapshot captured at posting time for cross-listing comparisons
+  priceUsdSnapshot Float?
+  listingType      ListingType
+  propertyType     PropertyType
+  status           ListingStatus @default(ACTIVE)
+
+  bedrooms         Int?
+  bathrooms        Int?
+  areaSqm          Float?
+
+  // Freeform address — Madagascar lacks standardised addressing
+  addressFreeform  String
+  city             String
+  region           Region
+  // Lat/lng required; freeform address is display-only
+  latitude         Float
+  longitude        Float
+
+  // WhatsApp number for this listing (may differ from owner's account phone)
+  whatsappContact  String?
+
+  // Moderation — listings flagged by users go to UNDER_REVIEW; admins resolve
+  reportCount      Int           @default(0)
+  isModerated      Boolean       @default(false)
+  moderatedAt      DateTime?
+
+  ownerId          String
+  owner            User          @relation(fields: [ownerId], references: [id])
+
+  images           ListingImage[]
+  favorites        Favorite[]
+  messages         Message[]
+  reports          Report[]
+
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  @@index([region])
+  @@index([listingType])
+  @@index([propertyType])
+  @@index([status])
+  @@index([ownerId])
+}
+
+model ListingImage {
+  id          String   @id @default(cuid())
+  listingId   String
+  listing     Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  url         String
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+
+  @@index([listingId])
+}
+
+model Favorite {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  listingId   String
+  listing     Listing  @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+
+  @@unique([userId, listingId])
+}
+
+model Message {
+  id          String    @id @default(cuid())
+  senderId    String
+  sender      User      @relation("SentMessages",    fields: [senderId],    references: [id])
+  recipientId String
+  recipient   User      @relation("ReceivedMessages", fields: [recipientId], references: [id])
+  listingId   String?
+  listing     Listing?  @relation(fields: [listingId], references: [id])
+  content     String
+  readAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([senderId])
+  @@index([recipientId])
+}
+
+model Report {
+  id          String    @id @default(cuid())
+  reporterId  String
+  reporter    User      @relation(fields: [reporterId], references: [id])
+  listingId   String
+  listing     Listing   @relation(fields: [listingId], references: [id])
+  reason      String
+  resolved    Boolean   @default(false)
+  resolvedAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([listingId])
+  @@index([resolved])
+}
