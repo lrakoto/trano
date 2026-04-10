@@ -4,30 +4,31 @@ import {
   ActivityIndicator, TextInput, Dimensions,
 } from 'react-native';
 import MapView, { Marker, Callout } from 'react-native-maps';
+import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { Listing } from '@trano/shared';
 import { useAuth } from '../context/AuthContext';
-import { API_BASE_URL, COLORS } from '../constants';
+import { AppHeader } from '../components/AppHeader';
+import { API_BASE_URL, COLORS, isInMadagascar } from '../constants';
 import type { RootStackParamList } from '../navigation';
 
 type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 const { height } = Dimensions.get('window');
 
-// Default map center: Antananarivo
-const DEFAULT_REGION = {
-  latitude:      -18.9137,
-  longitude:      47.5361,
-  latitudeDelta:  0.5,
-  longitudeDelta: 0.5,
+const ANTANANARIVO = {
+  latitude:       -18.9137,
+  longitude:       47.5361,
+  latitudeDelta:   0.35,
+  longitudeDelta:  0.35,
 };
 
 export function HomeScreen() {
-  const navigation  = useNavigation<Nav>();
-  const { user }    = useAuth();
-  const mapRef      = useRef<MapView>(null);
+  const navigation = useNavigation<Nav>();
+  const { user }   = useAuth();
+  const mapRef     = useRef<MapView>(null);
 
   const [listings,     setListings]     = useState<Listing[]>([]);
   const [filtered,     setFiltered]     = useState<Listing[]>([]);
@@ -35,7 +36,6 @@ export function HomeScreen() {
   const [search,       setSearch]       = useState('');
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
 
-  // Fetch listings from API
   useEffect(() => {
     fetch(`${API_BASE_URL}/listings`)
       .then((r) => r.json())
@@ -47,19 +47,24 @@ export function HomeScreen() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Request location and pan map to user
   useEffect(() => {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') return;
       const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      const coords = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
-      setUserLocation(coords);
-      mapRef.current?.animateToRegion({ ...coords, latitudeDelta: 0.2, longitudeDelta: 0.2 }, 800);
+      const { latitude, longitude } = loc.coords;
+
+      // Only use device location if it's actually within Madagascar
+      if (!isInMadagascar(latitude, longitude)) return;
+
+      setUserLocation({ latitude, longitude });
+      mapRef.current?.animateToRegion(
+        { latitude, longitude, latitudeDelta: 0.2, longitudeDelta: 0.2 },
+        800,
+      );
     })();
   }, []);
 
-  // Filter listings by city search
   useEffect(() => {
     const q = search.trim().toLowerCase();
     setFiltered(
@@ -74,19 +79,18 @@ export function HomeScreen() {
     );
   }, [search, listings]);
 
-  const handleFab = () => {
-    navigation.navigate(user ? 'PostListing' : 'Login');
-  };
+  const handleFab = () => navigation.navigate(user ? 'PostListing' : 'Login');
 
   return (
     <View style={styles.container}>
+      <AppHeader />
 
-      {/* ── Top half: Map ─────────────────────────────────── */}
+      {/* ── Map (top ~45% of remaining space) ──────────────── */}
       <View style={styles.mapContainer}>
         <MapView
           ref={mapRef}
           style={styles.map}
-          initialRegion={DEFAULT_REGION}
+          initialRegion={ANTANANARIVO}
           showsUserLocation={!!userLocation}
           showsMyLocationButton={false}
         >
@@ -100,9 +104,7 @@ export function HomeScreen() {
                   {(Number(listing.priceMga) / 1_000_000).toFixed(1)}M
                 </Text>
               </View>
-              <Callout
-                onPress={() => navigation.navigate('ListingDetail', { listingId: listing.id })}
-              >
+              <Callout onPress={() => navigation.navigate('ListingDetail', { listingId: listing.id })}>
                 <View style={styles.callout}>
                   <Text style={styles.calloutTitle} numberOfLines={2}>{listing.title}</Text>
                   <Text style={styles.calloutPrice}>
@@ -116,8 +118,8 @@ export function HomeScreen() {
         </MapView>
       </View>
 
-      {/* ── Bottom half: Listings list ─────────────────────── */}
-      <View style={styles.listContainer}>
+      {/* ── Listing cards ───────────────────────────────────── */}
+      <View style={styles.listWrapper}>
         {loading ? (
           <ActivityIndicator style={styles.loader} color={COLORS.primary} />
         ) : (
@@ -126,41 +128,24 @@ export function HomeScreen() {
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.list}
             showsVerticalScrollIndicator={false}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={styles.card}
-                onPress={() => navigation.navigate('ListingDetail', { listingId: item.id })}
-                activeOpacity={0.8}
-              >
-                <View style={styles.cardHeader}>
-                  <Text style={styles.cardTitle} numberOfLines={1}>{item.title}</Text>
-                  <Text style={styles.cardPrice}>
-                    {Number(item.priceMga).toLocaleString('fr-MG')} MGA
-                  </Text>
-                </View>
-                <Text style={styles.cardLocation}>{item.city} · {item.region}</Text>
-                <View style={styles.cardMeta}>
-                  <Text style={styles.tag}>
-                    {item.listingType === 'RENT' ? 'Hofana' : 'Amidy'}
-                  </Text>
-                  <Text style={styles.tag}>{item.propertyType}</Text>
-                  {item.bedrooms  != null && <Text style={styles.tagMuted}>{item.bedrooms} efitrano</Text>}
-                  {item.areaSqm   != null && <Text style={styles.tagMuted}>{item.areaSqm} m²</Text>}
-                  {item.owner.isVerified && <Text style={styles.verified}>✓</Text>}
-                </View>
-              </TouchableOpacity>
-            )}
+            renderItem={({ item }) => <ListingCard listing={item} onPress={() =>
+              navigation.navigate('ListingDetail', { listingId: item.id })
+            } />}
             ListEmptyComponent={
-              <Text style={styles.empty}>
-                {search ? 'Tsy misy voahitsika' : 'Tsy misy lisitra amin\'izao fotoana izao'}
-              </Text>
+              <View style={styles.emptyWrap}>
+                <Ionicons name="search-outline" size={36} color={COLORS.border} />
+                <Text style={styles.emptyText}>
+                  {search ? 'Tsy misy voahitsika' : 'Tsy misy lisitra amin\'izao fotoana izao'}
+                </Text>
+              </View>
             }
           />
         )}
       </View>
 
-      {/* ── Pinned search bar at bottom ────────────────────── */}
+      {/* ── Pinned search bar ───────────────────────────────── */}
       <View style={styles.searchBar}>
+        <Ionicons name="search" size={17} color={COLORS.textMuted} style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
           value={search}
@@ -172,76 +157,191 @@ export function HomeScreen() {
         />
       </View>
 
-      {/* ── FAB: post listing (prompts login if needed) ────── */}
+      {/* ── FAB ─────────────────────────────────────────────── */}
       <TouchableOpacity style={styles.fab} onPress={handleFab} activeOpacity={0.85}>
-        <Text style={styles.fabText}>+</Text>
+        <Ionicons name="add" size={28} color={COLORS.surface} />
       </TouchableOpacity>
-
     </View>
   );
 }
 
+// ─── Listing Card ─────────────────────────────────────────────────────────────
+
+function ListingCard({ listing, onPress }: { listing: Listing; onPress: () => void }) {
+  return (
+    <TouchableOpacity style={card.container} onPress={onPress} activeOpacity={0.8}>
+      {/* Image placeholder — replaced with real images once upload is built */}
+      <View style={card.imagePlaceholder}>
+        <Ionicons name="home-outline" size={28} color={COLORS.border} />
+        <View style={card.typeBadge}>
+          <Text style={card.typeBadgeText}>
+            {listing.listingType === 'RENT' ? 'Hofana' : 'Amidy'}
+          </Text>
+        </View>
+      </View>
+
+      <View style={card.body}>
+        <View style={card.priceRow}>
+          <Text style={card.price}>
+            {Number(listing.priceMga).toLocaleString('fr-MG')}
+            <Text style={card.priceCurrency}> MGA</Text>
+          </Text>
+          {listing.owner.isVerified && (
+            <View style={card.verifiedBadge}>
+              <Ionicons name="checkmark-circle" size={13} color={COLORS.primaryLight} />
+            </View>
+          )}
+        </View>
+
+        <Text style={card.title} numberOfLines={1}>{listing.title}</Text>
+
+        <View style={card.locationRow}>
+          <Ionicons name="location-outline" size={12} color={COLORS.textMuted} />
+          <Text style={card.location}>{listing.city} · {listing.region}</Text>
+        </View>
+
+        {(listing.bedrooms != null || listing.bathrooms != null || listing.areaSqm != null) && (
+          <View style={card.statsRow}>
+            {listing.bedrooms  != null && <Stat icon="bed-outline"    value={`${listing.bedrooms} efitrano`} />}
+            {listing.bathrooms != null && <Stat icon="water-outline"  value={`${listing.bathrooms} tambajotra`} />}
+            {listing.areaSqm   != null && <Stat icon="resize-outline" value={`${listing.areaSqm} m²`} />}
+          </View>
+        )}
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+function Stat({ icon, value }: { icon: React.ComponentProps<typeof Ionicons>['name']; value: string }) {
+  return (
+    <View style={statStyles.row}>
+      <Ionicons name={icon} size={12} color={COLORS.textSecondary} />
+      <Text style={statStyles.text}>{value}</Text>
+    </View>
+  );
+}
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
 const styles = StyleSheet.create({
   container:    { flex: 1, backgroundColor: COLORS.background },
-
-  // Map
-  mapContainer: { height: height * 0.45 },
+  mapContainer: { height: height * 0.38 },
   map:          { flex: 1 },
+
   pin: {
-    backgroundColor: COLORS.primary, borderRadius: 8,
-    paddingHorizontal: 6, paddingVertical: 3,
-    borderWidth: 1.5, borderColor: COLORS.white,
+    backgroundColor: COLORS.primary,
+    borderRadius:    10,
+    paddingHorizontal: 8,
+    paddingVertical:   4,
+    borderWidth:     1.5,
+    borderColor:     COLORS.surface,
+    shadowColor:     '#000',
+    shadowOpacity:   0.25,
+    shadowRadius:    4,
+    elevation:       4,
   },
-  pinText:      { color: COLORS.white, fontSize: 11, fontWeight: '700' },
-  callout:      { width: 180, padding: 10 },
+  pinText: { color: COLORS.surface, fontSize: 11, fontWeight: '800' },
+
+  callout:      { width: 190, padding: 10 },
   calloutTitle: { fontSize: 13, fontWeight: '700', color: COLORS.text },
-  calloutPrice: { fontSize: 12, color: COLORS.primary, marginTop: 3 },
-  calloutCta:   { fontSize: 11, color: COLORS.secondary, marginTop: 5 },
+  calloutPrice: { fontSize: 12, color: COLORS.primaryMid, marginTop: 3 },
+  calloutCta:   { fontSize: 11, color: COLORS.primaryLight, marginTop: 5, fontWeight: '600' },
 
-  // List
-  listContainer: { flex: 1, marginBottom: 62 },
-  loader:        { marginTop: 30 },
-  list:          { padding: 12, paddingBottom: 8 },
-  card: {
-    padding: 14, marginBottom: 10, backgroundColor: COLORS.white,
-    borderRadius: 12, borderWidth: 1, borderColor: COLORS.border,
-  },
-  cardHeader:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
-  cardTitle:    { fontSize: 14, fontWeight: '600', color: COLORS.text, flex: 1, marginRight: 8 },
-  cardPrice:    { fontSize: 14, fontWeight: '700', color: COLORS.primary },
-  cardLocation: { fontSize: 12, color: COLORS.textMuted, marginTop: 3 },
-  cardMeta:     { flexDirection: 'row', gap: 5, marginTop: 7, flexWrap: 'wrap', alignItems: 'center' },
-  tag: {
-    paddingHorizontal: 7, paddingVertical: 2, borderRadius: 4,
-    backgroundColor: COLORS.secondary + '22', color: COLORS.secondary, fontSize: 11, fontWeight: '600',
-  },
-  tagMuted: {
-    paddingHorizontal: 7, paddingVertical: 2, borderRadius: 4,
-    backgroundColor: COLORS.border, color: COLORS.textMuted, fontSize: 11,
-  },
-  verified:     { fontSize: 12, color: COLORS.secondary, fontWeight: '700' },
-  empty:        { textAlign: 'center', marginTop: 40, color: COLORS.textMuted, fontSize: 14 },
+  listWrapper:  { flex: 1, marginBottom: 62 },
+  loader:       { marginTop: 30 },
+  list:         { padding: 14, paddingBottom: 8 },
+  emptyWrap:    { alignItems: 'center', marginTop: 40, gap: 10 },
+  emptyText:    { color: COLORS.textMuted, fontSize: 14, textAlign: 'center' },
 
-  // Search bar
   searchBar: {
-    position: 'absolute', bottom: 0, left: 0, right: 0,
-    backgroundColor: COLORS.white, paddingHorizontal: 12, paddingVertical: 8,
-    borderTopWidth: 1, borderTopColor: COLORS.border,
-    shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: 4, elevation: 8,
+    position:          'absolute',
+    bottom:             0,
+    left:               0,
+    right:              0,
+    backgroundColor:   COLORS.surface,
+    paddingHorizontal: 14,
+    paddingVertical:    10,
+    borderTopWidth:     1,
+    borderTopColor:    COLORS.border,
+    flexDirection:     'row',
+    alignItems:        'center',
+    shadowColor:       '#000',
+    shadowOpacity:      0.05,
+    shadowRadius:       6,
+    elevation:          8,
   },
+  searchIcon:  { marginRight: 8 },
   searchInput: {
-    backgroundColor: COLORS.background, borderRadius: 10,
-    paddingHorizontal: 14, paddingVertical: 10,
-    fontSize: 15, color: COLORS.text,
-    borderWidth: 1, borderColor: COLORS.border,
+    flex:              1,
+    backgroundColor:  COLORS.background,
+    borderRadius:      10,
+    paddingHorizontal: 12,
+    paddingVertical:    9,
+    fontSize:          14,
+    color:            COLORS.text,
+    borderWidth:       1,
+    borderColor:      COLORS.border,
   },
 
-  // FAB
   fab: {
-    position: 'absolute', bottom: 72, right: 16, width: 52, height: 52,
-    borderRadius: 26, backgroundColor: COLORS.primary,
-    alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 6, elevation: 6,
+    position:        'absolute',
+    bottom:           72,
+    right:            16,
+    width:            52,
+    height:           52,
+    borderRadius:     26,
+    backgroundColor: COLORS.primary,
+    alignItems:      'center',
+    justifyContent:  'center',
+    shadowColor:     '#000',
+    shadowOpacity:    0.25,
+    shadowRadius:     8,
+    elevation:        6,
   },
-  fabText: { color: COLORS.white, fontSize: 28, lineHeight: 32 },
+});
+
+const card = StyleSheet.create({
+  container: {
+    backgroundColor: COLORS.surface,
+    borderRadius:    16,
+    marginBottom:    12,
+    overflow:        'hidden',
+    borderWidth:      1,
+    borderColor:     COLORS.border,
+    shadowColor:     '#000',
+    shadowOpacity:    0.06,
+    shadowRadius:     8,
+    shadowOffset:    { width: 0, height: 2 },
+    elevation:        3,
+  },
+  imagePlaceholder: {
+    height:          130,
+    backgroundColor: COLORS.divider,
+    alignItems:      'center',
+    justifyContent:  'center',
+  },
+  typeBadge: {
+    position:        'absolute',
+    top:              10,
+    left:             10,
+    backgroundColor: COLORS.primary,
+    borderRadius:     6,
+    paddingHorizontal: 9,
+    paddingVertical:   4,
+  },
+  typeBadgeText:    { color: COLORS.surface, fontSize: 11, fontWeight: '700' },
+  body:             { padding: 14 },
+  priceRow:         { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  price:            { fontSize: 18, fontWeight: '800', color: COLORS.primary },
+  priceCurrency:    { fontSize: 13, fontWeight: '600', color: COLORS.textSecondary },
+  verifiedBadge:    { padding: 2 },
+  title:            { fontSize: 14, fontWeight: '600', color: COLORS.text, marginTop: 4 },
+  locationRow:      { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 4 },
+  location:         { fontSize: 12, color: COLORS.textMuted },
+  statsRow:         { flexDirection: 'row', gap: 12, marginTop: 10, flexWrap: 'wrap' },
+});
+
+const statStyles = StyleSheet.create({
+  row:  { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  text: { fontSize: 12, color: COLORS.textSecondary },
 });
