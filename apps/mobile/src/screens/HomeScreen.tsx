@@ -179,6 +179,7 @@ function ListingCard({ listing, onPress }: { listing: Listing; onPress: () => vo
           longitude={listing.longitude}
           width={IMAGE_SIZE}
           height={IMAGE_SIZE}
+          delta={0.001}
         />
         <View style={card.typePill}>
           <Text style={card.typePillText}>

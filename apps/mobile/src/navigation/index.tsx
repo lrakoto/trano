@@ -107,7 +107,11 @@ export function RootNavigator() {
   return (
     <Stack.Navigator>
       <Stack.Screen name="Tabs"          component={TabNavigator}        options={{ headerShown: false }} />
-      <Stack.Screen name="ListingDetail" component={ListingDetailScreen} options={{ title: 'Antsipirihany' }} />
+      <Stack.Screen
+        name="ListingDetail"
+        component={ListingDetailScreen}
+        options={{ title: 'Antsipirihany', headerBackTitle: 'Hiverina' }}
+      />
       <Stack.Screen name="PostListing"   component={PostListingScreen}   options={{ title: 'Manampy lisitra' }} />
       <Stack.Screen name="Login"    component={LoginScreen}    options={{ presentation: 'modal', headerShown: false }} />
       <Stack.Screen name="Register" component={RegisterScreen} options={{ presentation: 'modal', headerShown: false }} />
