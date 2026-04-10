@@ -5,7 +5,6 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { Listing } from '@trano/shared';
@@ -127,20 +126,23 @@ export function ListingDetailScreen({ route, navigation }: Props) {
 
       {/* Floating frosted glass pill button */}
       {waPhone && (
-        <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 12 }]}>
+        <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 8 }]}>
           <TouchableOpacity onPress={handleWhatsApp} activeOpacity={0.82} style={styles.contactShadow}>
-            <BlurView intensity={60} tint="light" style={styles.contactBlur}>
-              {/* Frosted tint layer */}
+            <LinearGradient
+              colors={['rgba(255,255,255,0.92)', 'rgba(235,235,235,0.82)']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 0, y: 1 }}
+              style={styles.contactButton}
+            >
+              {/* Top gloss sheen */}
               <LinearGradient
-                colors={['rgba(255,255,255,0.38)', 'rgba(255,255,255,0.14)']}
+                colors={['rgba(255,255,255,0.7)', 'rgba(255,255,255,0)']}
                 start={{ x: 0, y: 0 }}
                 end={{ x: 0, y: 1 }}
-                style={StyleSheet.absoluteFillObject}
+                style={styles.gloss}
               />
-              {/* Top rim highlight */}
-              <View style={styles.gloss} />
               <Text style={styles.contactButtonText}>Mifandraisa amin'i WhatsApp</Text>
-            </BlurView>
+            </LinearGradient>
           </TouchableOpacity>
         </View>
       )}
@@ -244,28 +246,26 @@ const styles = StyleSheet.create({
   contactShadow: {
     borderRadius:  999,
     shadowColor:   '#000',
-    shadowOpacity:  0.18,
-    shadowRadius:   16,
-    shadowOffset:  { width: 0, height: 6 },
-    elevation:      8,
+    shadowOpacity:  0.14,
+    shadowRadius:   14,
+    shadowOffset:  { width: 0, height: 5 },
+    elevation:      7,
   },
-  contactBlur: {
-    borderRadius:   999,
-    overflow:       'hidden',
-    paddingVertical: 17,
-    alignItems:     'center',
-    justifyContent: 'center',
-    borderWidth:     1,
-    borderColor:    'rgba(255,255,255,0.55)',
-    backgroundColor: 'rgba(255,255,255,0.15)',
+  contactButton: {
+    borderRadius:    999,
+    overflow:        'hidden',
+    paddingVertical:  17,
+    alignItems:      'center',
+    justifyContent:  'center',
+    borderWidth:      1,
+    borderColor:     'rgba(255,255,255,0.9)',
   },
   gloss: {
-    position:        'absolute',
-    top:              0,
-    left:             0,
-    right:            0,
-    height:           '48%',
-    backgroundColor: 'rgba(255,255,255,0.22)',
+    position: 'absolute',
+    top:       0,
+    left:      0,
+    right:     0,
+    height:   '50%',
     borderTopLeftRadius:  999,
     borderTopRightRadius: 999,
   },

@@ -66,8 +66,8 @@ function TabNavigator() {
         tabBarStyle: {
           backgroundColor:   COLORS.surface,
           borderTopColor:    COLORS.border,
-          height:             54 + insets.bottom,
-          paddingBottom:      insets.bottom + 6,
+          height:             50 + insets.bottom,
+          paddingBottom:      insets.bottom + 4,
           paddingTop:         6,
           paddingHorizontal:  4,
         },
@@ -113,7 +113,11 @@ export function RootNavigator() {
       <Stack.Screen
         name="ListingDetail"
         component={ListingDetailScreen}
-        options={{ title: 'Antsipirihany', headerBackTitle: 'Hiverina' }}
+        options={{
+          title: 'Antsipirihany',
+          headerBackTitle: 'Hiverina',
+          headerBackTitleStyle: { fontSize: 13 },
+        }}
       />
       <Stack.Screen name="PostListing"   component={PostListingScreen}   options={{ title: 'Manampy lisitra' }} />
       <Stack.Screen name="Login"    component={LoginScreen}    options={{ presentation: 'modal', headerShown: false }} />
