@@ -41,7 +41,10 @@ export function LoginScreen({ navigation }: Props) {
         <TouchableOpacity style={styles.dismiss} onPress={() => navigation.goBack()}>
           <Text style={styles.dismissText}>✕</Text>
         </TouchableOpacity>
-        <Text style={styles.logo}>Trano</Text>
+        <View style={styles.logoWrap}>
+          <Text style={styles.logoText}>trano</Text>
+          <View style={styles.logoDot} />
+        </View>
         <Text style={styles.subtitle}>Midira amin'ny kaontinao</Text>
 
         <Text style={styles.label}>Lahajan-telefaona</Text>
@@ -82,11 +85,13 @@ export function LoginScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.background },
   inner:     { flex: 1, padding: 28, justifyContent: 'center' },
-  logo:      { fontSize: 42, fontWeight: '800', color: COLORS.primary, textAlign: 'center', marginBottom: 6 },
+  logoWrap:  { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center', gap: 4, marginBottom: 6 },
+  logoText:  { fontSize: 42, fontWeight: '800', color: COLORS.primary, letterSpacing: -1 },
+  logoDot:   { width: 9, height: 9, borderRadius: 5, backgroundColor: COLORS.accent, marginBottom: 8 },
   subtitle:  { fontSize: 15, color: COLORS.textMuted, textAlign: 'center', marginBottom: 36 },
   label:     { fontSize: 14, fontWeight: '600', color: COLORS.text, marginBottom: 6, marginTop: 16 },
   input: {
-    backgroundColor: COLORS.white, borderWidth: 1, borderColor: COLORS.border,
+    backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border,
     borderRadius: 8, padding: 14, fontSize: 15, color: COLORS.text,
   },
   button: { marginTop: 28 },

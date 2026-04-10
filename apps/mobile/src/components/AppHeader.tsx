@@ -3,7 +3,7 @@ import {
   View, Text, TouchableOpacity, StyleSheet, StatusBar, Platform,
   Modal, Animated, Pressable, Dimensions,
 } from 'react-native';
-import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -112,8 +112,14 @@ export function AppHeader() {
         {/* Panel */}
         <Animated.View style={[styles.drawer, { transform: [{ translateX }] }]}>
           {/* Frosted glass layers */}
-          <BlurView intensity={65} tint="default" style={StyleSheet.absoluteFill} />
-          <View style={styles.drawerTint} />
+          <LinearGradient
+            colors={['#0D3D20', '#0A2916']}
+            start={{ x: 0.1, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={StyleSheet.absoluteFill}
+          />
+          {/* Subtle top-left radial highlight for depth */}
+          <View style={styles.drawerGlow} />
           {/* Drawer header */}
           <View style={styles.drawerHeader}>
             <View style={styles.logoWrap}>
@@ -188,6 +194,7 @@ const styles = StyleSheet.create({
     left:               0,
     width:              DRAWER_W,
     backgroundColor:   'transparent',
+    overflow:          'hidden',
     paddingTop:         STATUS_BAR + 20,
     paddingHorizontal:  24,
     shadowColor:       '#000',
@@ -198,9 +205,14 @@ const styles = StyleSheet.create({
     borderRightWidth:   1,
     borderRightColor:  'rgba(255,255,255,0.08)',
   },
-  drawerTint: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(20, 48, 34, 0.82)',
+  drawerGlow: {
+    position:        'absolute',
+    top:             -60,
+    left:            -60,
+    width:            260,
+    height:           260,
+    borderRadius:     130,
+    backgroundColor: 'rgba(34, 120, 60, 0.18)',
   },
   drawerHeader:   { marginBottom: 8 },
   drawerSubtitle: { color: 'rgba(255,255,255,0.55)', fontSize: 13, marginTop: 4 },
