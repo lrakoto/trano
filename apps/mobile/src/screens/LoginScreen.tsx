@@ -3,6 +3,7 @@ import {
   View, Text, TextInput, TouchableOpacity,
   StyleSheet, Alert, KeyboardAvoidingView, Platform,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAuth } from '../context/AuthContext';
 import { GlassButton } from '../components/GlassButton';
@@ -37,10 +38,12 @@ export function LoginScreen({ navigation }: Props) {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
+      {/* Close button anchored to top-right of the modal */}
+      <TouchableOpacity style={styles.dismiss} onPress={() => navigation.goBack()} hitSlop={10}>
+        <Ionicons name="close" size={22} color={COLORS.textMuted} />
+      </TouchableOpacity>
+
       <View style={styles.inner}>
-        <TouchableOpacity style={styles.dismiss} onPress={() => navigation.goBack()}>
-          <Text style={styles.dismissText}>✕</Text>
-        </TouchableOpacity>
         <View style={styles.logoWrap}>
           <Text style={styles.logoText}>trano</Text>
           <View style={styles.logoDot} />
@@ -95,9 +98,14 @@ const styles = StyleSheet.create({
     borderRadius: 8, padding: 14, fontSize: 15, color: COLORS.text,
   },
   button: { marginTop: 28 },
-  link:        { marginTop: 20, alignItems: 'center' },
-  linkText:    { fontSize: 14, color: COLORS.textMuted },
-  linkBold:    { color: COLORS.primary, fontWeight: '700' },
-  dismiss:     { alignSelf: 'flex-end', padding: 4, marginBottom: 8 },
-  dismissText: { fontSize: 18, color: COLORS.textMuted },
+  link:      { marginTop: 20, alignItems: 'center' },
+  linkText:  { fontSize: 14, color: COLORS.textMuted },
+  linkBold:  { color: COLORS.primary, fontWeight: '700' },
+  dismiss: {
+    position: 'absolute',
+    top:       Platform.OS === 'ios' ? 54 : 16,
+    right:     20,
+    zIndex:    10,
+    padding:   6,
+  },
 });
