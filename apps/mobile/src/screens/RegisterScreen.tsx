@@ -6,9 +6,9 @@ import {
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAuth } from '../context/AuthContext';
 import { COLORS } from '../constants';
-import type { AuthStackParamList } from '../navigation';
+import type { RootStackParamList } from '../navigation';
 
-type Props = NativeStackScreenProps<AuthStackParamList, 'Register'>;
+type Props = NativeStackScreenProps<RootStackParamList, 'Register'>;
 
 type Role = 'BUYER' | 'SELLER' | 'AGENT';
 
@@ -108,7 +108,7 @@ export function RegisterScreen({ navigation }: Props) {
           }
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.link} onPress={() => navigation.navigate('Login')}>
+        <TouchableOpacity style={styles.link} onPress={() => navigation.replace('Login')}>
           <Text style={styles.linkText}>Manana kaonty sahady? <Text style={styles.linkBold}>Miditra</Text></Text>
         </TouchableOpacity>
       </ScrollView>

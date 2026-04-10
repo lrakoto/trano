@@ -17,6 +17,9 @@ export type RootStackParamList = {
   Tabs:          undefined;
   ListingDetail: { listingId: string };
   PostListing:   undefined;
+  // Auth screens presented as modals so browsing context is preserved
+  Login:         undefined;
+  Register:      undefined;
 };
 
 export type TabParamList = {
@@ -24,49 +27,22 @@ export type TabParamList = {
   Profile: undefined;
 };
 
-export type AuthStackParamList = {
-  Login:    undefined;
-  Register: undefined;
-};
-
 // ─── Navigators ───────────────────────────────────────────────────────────────
 
-const RootStack = createNativeStackNavigator<RootStackParamList>();
-const Tab       = createBottomTabNavigator<TabParamList>();
-const AuthStack = createNativeStackNavigator<AuthStackParamList>();
+const Stack = createNativeStackNavigator<RootStackParamList>();
+const Tab   = createBottomTabNavigator<TabParamList>();
 
 function TabNavigator() {
   return (
     <Tab.Navigator screenOptions={{ tabBarActiveTintColor: COLORS.primary }}>
-      <Tab.Screen name="Home"    component={HomeScreen}    options={{ title: 'Trano' }} />
+      <Tab.Screen name="Home"    component={HomeScreen}    options={{ headerShown: false, title: 'Trano' }} />
       <Tab.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profily' }} />
     </Tab.Navigator>
   );
 }
 
-function AppNavigator() {
-  return (
-    <RootStack.Navigator>
-      <RootStack.Screen name="Tabs"          component={TabNavigator}        options={{ headerShown: false }} />
-      <RootStack.Screen name="ListingDetail" component={ListingDetailScreen} options={{ title: 'Antsipirihany' }} />
-      <RootStack.Screen name="PostListing"   component={PostListingScreen}   options={{ title: 'Manampy lisitra' }} />
-    </RootStack.Navigator>
-  );
-}
-
-function AuthNavigator() {
-  return (
-    <AuthStack.Navigator screenOptions={{ headerShown: false }}>
-      <AuthStack.Screen name="Login"    component={LoginScreen} />
-      <AuthStack.Screen name="Register" component={RegisterScreen} />
-    </AuthStack.Navigator>
-  );
-}
-
-// ─── Root: shows auth or app depending on login state ─────────────────────────
-
 export function RootNavigator() {
-  const { user, loading } = useAuth();
+  const { loading } = useAuth();
 
   if (loading) {
     return (
@@ -76,5 +52,15 @@ export function RootNavigator() {
     );
   }
 
-  return user ? <AppNavigator /> : <AuthNavigator />;
+  return (
+    <Stack.Navigator>
+      {/* App screens — always accessible */}
+      <Stack.Screen name="Tabs"          component={TabNavigator}        options={{ headerShown: false }} />
+      <Stack.Screen name="ListingDetail" component={ListingDetailScreen} options={{ title: 'Antsipirihany' }} />
+      <Stack.Screen name="PostListing"   component={PostListingScreen}   options={{ title: 'Manampy lisitra' }} />
+      {/* Auth screens — presented modally so user can dismiss back to browsing */}
+      <Stack.Screen name="Login"    component={LoginScreen}    options={{ presentation: 'modal', headerShown: false }} />
+      <Stack.Screen name="Register" component={RegisterScreen} options={{ presentation: 'modal', headerShown: false }} />
+    </Stack.Navigator>
+  );
 }

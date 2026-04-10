@@ -6,9 +6,9 @@ import {
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAuth } from '../context/AuthContext';
 import { COLORS } from '../constants';
-import type { AuthStackParamList } from '../navigation';
+import type { RootStackParamList } from '../navigation';
 
-type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
+type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
 
 export function LoginScreen({ navigation }: Props) {
   const { login } = useAuth();
@@ -37,6 +37,9 @@ export function LoginScreen({ navigation }: Props) {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <View style={styles.inner}>
+        <TouchableOpacity style={styles.dismiss} onPress={() => navigation.goBack()}>
+          <Text style={styles.dismissText}>✕</Text>
+        </TouchableOpacity>
         <Text style={styles.logo}>Trano</Text>
         <Text style={styles.subtitle}>Midira amin'ny kaontinao</Text>
 
@@ -67,7 +70,7 @@ export function LoginScreen({ navigation }: Props) {
           }
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.link} onPress={() => navigation.navigate('Register')}>
+        <TouchableOpacity style={styles.link} onPress={() => navigation.replace('Register')}>
           <Text style={styles.linkText}>Tsy manana kaonty? <Text style={styles.linkBold}>Mamorona</Text></Text>
         </TouchableOpacity>
       </View>
@@ -90,7 +93,9 @@ const styles = StyleSheet.create({
     padding: 16, borderRadius: 12, alignItems: 'center',
   },
   buttonText: { color: COLORS.white, fontSize: 16, fontWeight: '700' },
-  link:       { marginTop: 20, alignItems: 'center' },
-  linkText:   { fontSize: 14, color: COLORS.textMuted },
-  linkBold:   { color: COLORS.primary, fontWeight: '700' },
+  link:        { marginTop: 20, alignItems: 'center' },
+  linkText:    { fontSize: 14, color: COLORS.textMuted },
+  linkBold:    { color: COLORS.primary, fontWeight: '700' },
+  dismiss:     { alignSelf: 'flex-end', padding: 4, marginBottom: 8 },
+  dismissText: { fontSize: 18, color: COLORS.textMuted },
 });
