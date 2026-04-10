@@ -118,10 +118,10 @@ export function HomeScreen() {
         </MapView>
       </View>
 
-      {/* ── Listing cards ───────────────────────────────────── */}
+      {/* ── Listing cards (dark section) ────────────────────── */}
       <View style={styles.listWrapper}>
         {loading ? (
-          <ActivityIndicator style={styles.loader} color={COLORS.primary} />
+          <ActivityIndicator style={styles.loader} color={COLORS.surface} />
         ) : (
           <FlatList
             data={filtered}
@@ -145,16 +145,18 @@ export function HomeScreen() {
 
       {/* ── Pinned search bar ───────────────────────────────── */}
       <View style={styles.searchBar}>
-        <Ionicons name="search" size={17} color={COLORS.textMuted} style={styles.searchIcon} />
-        <TextInput
-          style={styles.searchInput}
-          value={search}
-          onChangeText={setSearch}
-          placeholder="Hikaroka tanàna... (ex: Antananarivo)"
-          placeholderTextColor={COLORS.textMuted}
-          returnKeyType="search"
-          clearButtonMode="while-editing"
-        />
+        <View style={styles.searchInputWrap}>
+          <Ionicons name="search" size={16} color={COLORS.surface + '88'} style={styles.searchIcon} />
+          <TextInput
+            style={styles.searchInput}
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Hikaroka tanàna... (ex: Antananarivo)"
+            placeholderTextColor={COLORS.surface + '66'}
+            returnKeyType="search"
+            clearButtonMode="while-editing"
+          />
+        </View>
       </View>
 
       {/* ── FAB ─────────────────────────────────────────────── */}
@@ -247,40 +249,43 @@ const styles = StyleSheet.create({
   calloutPrice: { fontSize: 12, color: COLORS.primaryMid, marginTop: 3 },
   calloutCta:   { fontSize: 11, color: COLORS.primaryLight, marginTop: 5, fontWeight: '600' },
 
-  listWrapper:  { flex: 1, marginBottom: 62 },
+  listWrapper:  { flex: 1, marginBottom: 62, backgroundColor: COLORS.primary },
   loader:       { marginTop: 30 },
   list:         { padding: 14, paddingBottom: 8 },
   emptyWrap:    { alignItems: 'center', marginTop: 40, gap: 10 },
-  emptyText:    { color: COLORS.textMuted, fontSize: 14, textAlign: 'center' },
+  emptyText:    { color: COLORS.surface + 'AA', fontSize: 14, textAlign: 'center' },
 
   searchBar: {
     position:          'absolute',
     bottom:             0,
     left:               0,
     right:              0,
-    backgroundColor:   COLORS.surface,
+    backgroundColor:   COLORS.primary,
     paddingHorizontal: 14,
     paddingVertical:    10,
     borderTopWidth:     1,
-    borderTopColor:    COLORS.border,
-    flexDirection:     'row',
-    alignItems:        'center',
+    borderTopColor:    '#ffffff18',
     shadowColor:       '#000',
-    shadowOpacity:      0.05,
+    shadowOpacity:      0.2,
     shadowRadius:       6,
     elevation:          8,
   },
+  searchInputWrap: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    backgroundColor:   '#ffffff14',
+    borderRadius:       12,
+    paddingHorizontal: 12,
+    paddingVertical:    2,
+    borderWidth:        1,
+    borderColor:       '#ffffff22',
+  },
   searchIcon:  { marginRight: 8 },
   searchInput: {
-    flex:              1,
-    backgroundColor:  COLORS.background,
-    borderRadius:      10,
-    paddingHorizontal: 12,
-    paddingVertical:    9,
-    fontSize:          14,
-    color:            COLORS.text,
-    borderWidth:       1,
-    borderColor:      COLORS.border,
+    flex:        1,
+    paddingVertical: 9,
+    fontSize:    14,
+    color:       COLORS.surface,
   },
 
   fab: {
