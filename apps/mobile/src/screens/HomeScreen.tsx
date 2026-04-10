@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
-  ActivityIndicator, TextInput, Dimensions,
+  ActivityIndicator, TextInput, Dimensions, Keyboard, Platform,
 } from 'react-native';
 import MapView, { Marker, Callout } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
@@ -36,6 +36,7 @@ export function HomeScreen() {
   const [loading,      setLoading]      = useState(true);
   const [search,       setSearch]       = useState('');
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [kbHeight,     setKbHeight]     = useState(0);
 
   useEffect(() => {
     fetch(`${API_BASE_URL}/listings`)
@@ -61,6 +62,18 @@ export function HomeScreen() {
         800,
       );
     })();
+  }, []);
+
+  useEffect(() => {
+    const show = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      (e) => setKbHeight(e.endCoordinates.height),
+    );
+    const hide = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => setKbHeight(0),
+    );
+    return () => { show.remove(); hide.remove(); };
   }, []);
 
   useEffect(() => {
@@ -140,7 +153,7 @@ export function HomeScreen() {
       </View>
 
       {/* ── Search bar ────────────────────────────────────── */}
-      <View style={styles.searchBar}>
+      <View style={[styles.searchBar, { bottom: kbHeight }]}>
         <View style={styles.searchInputWrap}>
           <Ionicons name="search" size={15} color={COLORS.textMuted} />
           <TextInput

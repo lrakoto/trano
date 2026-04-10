@@ -126,7 +126,7 @@ export function ListingDetailScreen({ route, navigation }: Props) {
 
       {/* Floating frosted glass pill button */}
       {waPhone && (
-        <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 8 }]}>
+        <View style={[styles.bottomBar, { paddingBottom: Math.max(0, insets.bottom - 4) }]}>
           <TouchableOpacity onPress={handleWhatsApp} activeOpacity={0.82} style={styles.contactShadow}>
             <LinearGradient
               colors={['rgba(255,255,255,0.92)', 'rgba(235,235,235,0.82)']}

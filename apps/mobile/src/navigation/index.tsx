@@ -37,7 +37,7 @@ export type TabParamList = {
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
 
 const TAB_ICONS: Record<keyof TabParamList, { active: IoniconsName; inactive: IoniconsName }> = {
-  Home:   { active: 'home',         inactive: 'home-outline' },
+  Home:   { active: 'compass',       inactive: 'compass-outline' },
   Saved:  { active: 'heart',        inactive: 'heart-outline' },
   Cities: { active: 'location',     inactive: 'location-outline' },
   Inbox:  { active: 'chatbubble',   inactive: 'chatbubble-outline' },
@@ -66,8 +66,8 @@ function TabNavigator() {
         tabBarStyle: {
           backgroundColor:   COLORS.surface,
           borderTopColor:    COLORS.border,
-          height:             50 + insets.bottom,
-          paddingBottom:      insets.bottom + 4,
+          height:             38 + insets.bottom,
+          paddingBottom:      Math.max(0, insets.bottom - 8),
           paddingTop:         6,
           paddingHorizontal:  4,
         },

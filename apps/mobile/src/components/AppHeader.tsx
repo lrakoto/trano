@@ -43,7 +43,7 @@ export function AppHeader({ onMenuPress }: Props) {
             <Text style={styles.avatarInitial}>{user.name[0].toUpperCase()}</Text>
           </View>
         ) : (
-          <Ionicons name="person-circle-outline" size={26} color={COLORS.primary} />
+          <Ionicons name="person-outline" size={24} color={COLORS.primary} />
         )}
       </TouchableOpacity>
     </View>
