@@ -236,7 +236,18 @@ function StatChip({ icon, label }: { icon: React.ComponentProps<typeof Ionicons>
 
 const styles = StyleSheet.create({
   container:    { flex: 1, backgroundColor: COLORS.background },
-  mapContainer: { height: height * 0.35 },
+  mapContainer: {
+    height:            height * 0.35,
+    borderBottomWidth:  2,
+    borderBottomColor: COLORS.accent,
+    // shadow cast downward onto the listing cards
+    shadowColor:      '#000',
+    shadowOpacity:     0.12,
+    shadowRadius:      8,
+    shadowOffset:     { width: 0, height: 4 },
+    elevation:         5,
+    zIndex:            1,
+  },
   map:          { flex: 1 },
 
   pin: {
