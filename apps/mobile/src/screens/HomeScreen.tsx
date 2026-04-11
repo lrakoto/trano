@@ -238,7 +238,7 @@ const styles = StyleSheet.create({
   container:    { flex: 1, backgroundColor: COLORS.background },
   mapContainer: {
     height:            height * 0.35,
-    borderBottomWidth:  2,
+    borderBottomWidth:  4,
     borderBottomColor: COLORS.accent,
     // shadow cast downward onto the listing cards
     shadowColor:      '#000',
@@ -271,7 +271,7 @@ const styles = StyleSheet.create({
 
   listWrapper:  { flex: 1, marginBottom: 54, backgroundColor: COLORS.background },
   loader:       { marginTop: 30 },
-  list:         { paddingHorizontal: 14, paddingTop: 10, paddingBottom: 4 },
+  list:         { paddingHorizontal: 14, paddingTop: 25, paddingBottom: 4 },
   emptyWrap:    { alignItems: 'center', marginTop: 40, gap: 8 },
   emptyText:    { color: COLORS.textMuted, fontSize: 13, textAlign: 'center' },
 
