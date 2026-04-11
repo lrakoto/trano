@@ -60,7 +60,7 @@ const styles = StyleSheet.create({
     borderBottomColor: COLORS.border,
   },
   iconButton:    { width: 36, alignItems: 'center' },
-  logoWrap:      { flexDirection: 'row', alignItems: 'flex-end', gap: 3 },
+  logoWrap:      { flexDirection: 'row', alignItems: 'flex-end', gap: 1 },
   logoText:      { fontSize: 26, fontWeight: '800', color: COLORS.primary, letterSpacing: -0.5 },
   logoDot:       { width: 7, height: 7, borderRadius: 4, backgroundColor: COLORS.accent, marginBottom: 5 },
   avatarBadge:   { width: 30, height: 30, borderRadius: 15, backgroundColor: COLORS.primaryMid, alignItems: 'center', justifyContent: 'center' },
