@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
   linkBold:  { color: COLORS.primary, fontWeight: '700' },
   dismiss: {
     position: 'absolute',
-    top:       Platform.OS === 'ios' ? 54 : 16,
+    top:       Platform.OS === 'ios' ? 24 : 16,
     right:     20,
     zIndex:    10,
     padding:   6,

@@ -3,7 +3,6 @@ import {
   View, Text, TouchableOpacity, StyleSheet,
   Animated, Pressable, Dimensions, StatusBar, Platform,
 } from 'react-native';
-import { BlurView } from 'expo-blur';
 import { Ionicons } from '@expo/vector-icons';
 import { useDrawer } from '../context/DrawerContext';
 import { useAuth } from '../context/AuthContext';
@@ -67,14 +66,10 @@ export function DrawerOverlay({ navRef }: Props) {
         <Pressable style={StyleSheet.absoluteFill} onPress={closeDrawer} />
       )}
 
-      {/* Drawer panel — translateX only, no opacity, no overflow:hidden → BlurView works */}
       <Animated.View
         style={[styles.drawer, { transform: [{ translateX }] }]}
         pointerEvents="auto"
       >
-        <BlurView intensity={70} tint="dark" style={StyleSheet.absoluteFill} />
-        <View style={styles.tint} />
-
         <View style={styles.logoWrap}>
           <Text style={styles.logoText}>trano</Text>
           <View style={styles.logoDot} />
@@ -112,19 +107,14 @@ const styles = StyleSheet.create({
     bottom:             0,
     left:               0,
     width:              DRAWER_W,
-    // no backgroundColor — BlurView fills it
-    // no overflow:hidden — would break the blur compositor
+    backgroundColor:   COLORS.primary,
     paddingTop:         STATUS_BAR + 24,
     paddingHorizontal:  26,
     shadowColor:       '#000',
-    shadowOpacity:      0.3,
-    shadowRadius:       20,
-    shadowOffset:      { width: 6, height: 0 },
-    elevation:          14,
-  },
-  tint: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(18, 38, 28, 0.78)',
+    shadowOpacity:      0.25,
+    shadowRadius:       16,
+    shadowOffset:      { width: 4, height: 0 },
+    elevation:          12,
   },
   logoWrap:        { flexDirection: 'row', alignItems: 'flex-end', gap: 3, marginBottom: 2 },
   logoText:        { fontSize: 30, fontWeight: '800', color: COLORS.surface, letterSpacing: -0.5 },
