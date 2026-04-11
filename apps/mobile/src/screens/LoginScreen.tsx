@@ -1,8 +1,7 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
   StyleSheet, Alert, KeyboardAvoidingView, Platform,
-  Animated, Easing, Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -13,27 +12,20 @@ import type { RootStackParamList } from '../navigation';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
 
-const { height } = Dimensions.get('window');
+const GLOBES = ['🌍', '🌎', '🌏'];
 
 export function LoginScreen({ navigation }: Props) {
   const { login } = useAuth();
-  const [phone,    setPhone]    = useState('');
-  const [password, setPassword] = useState('');
-  const [loading,  setLoading]  = useState(false);
+  const [phone,      setPhone]      = useState('');
+  const [password,   setPassword]   = useState('');
+  const [loading,    setLoading]    = useState(false);
+  const [globeIdx,   setGlobeIdx]   = useState(0);
 
-  // Spinning globe
-  const spinValue = useRef(new Animated.Value(0)).current;
+  // Cycle through 3 globe emoji — iOS renders them as shaded 3D spheres
   useEffect(() => {
-    Animated.loop(
-      Animated.timing(spinValue, {
-        toValue:         1,
-        duration:        9000,
-        easing:          Easing.linear,
-        useNativeDriver: true,
-      }),
-    ).start();
+    const t = setInterval(() => setGlobeIdx(i => (i + 1) % 3), 700);
+    return () => clearInterval(t);
   }, []);
-  const spin = spinValue.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
 
   const handleLogin = async () => {
     if (!phone || !password) {
@@ -61,11 +53,9 @@ export function LoginScreen({ navigation }: Props) {
       </TouchableOpacity>
 
       <View style={styles.inner}>
-        {/* Spinning globe */}
+        {/* 3D globe — cycles 🌍🌎🌏 so iOS renders each as a shaded sphere */}
         <View style={styles.globeWrap}>
-          <Animated.View style={{ transform: [{ rotate: spin }] }}>
-            <Ionicons name="globe-outline" size={58} color={COLORS.primaryLight} />
-          </Animated.View>
+          <Text style={styles.globeEmoji}>{GLOBES[globeIdx]}</Text>
         </View>
 
         {/* Logo */}
@@ -116,12 +106,13 @@ const styles = StyleSheet.create({
   inner: {
     flex:              1,
     paddingHorizontal: 28,
-    paddingTop:        height * 0.10,
-    paddingBottom:     40,
+    justifyContent:   'center',
+    paddingBottom:     60,  // pulls visual centre slightly above mathematical centre
   },
 
   // Globe
-  globeWrap: { alignItems: 'center', marginBottom: 18 },
+  globeWrap:   { alignItems: 'center', marginBottom: 16 },
+  globeEmoji:  { fontSize: 72 },
 
   // Logo
   logoWrap:  { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'center', gap: 4, marginBottom: 6 },
