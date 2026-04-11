@@ -40,7 +40,7 @@ export function LoginScreen({ navigation }: Props) {
     >
       {/* Close button anchored to top-right of the modal */}
       <TouchableOpacity style={styles.dismiss} onPress={() => navigation.goBack()} hitSlop={10}>
-        <Ionicons name="close" size={22} color={COLORS.textMuted} />
+        <Ionicons name="close-circle" size={34} color={COLORS.accent} />
       </TouchableOpacity>
 
       <View style={styles.inner}>
