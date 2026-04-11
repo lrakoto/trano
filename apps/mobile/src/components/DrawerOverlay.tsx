@@ -3,7 +3,6 @@ import {
   View, Text, TouchableOpacity, StyleSheet,
   Animated, Pressable, Dimensions, StatusBar, Platform,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useDrawer } from '../context/DrawerContext';
 import { useAuth } from '../context/AuthContext';
@@ -51,9 +50,9 @@ export function DrawerOverlay({ navRef }: Props) {
   };
 
   const menuItems: MenuItem[] = [
-    { icon: 'add-circle-outline', label: 'Hanampy lisitra',      screen: user ? 'PostListing' : 'Login', accent: true },
+    { icon: 'add-circle-outline',         label: 'Hanampy lisitra',       screen: user ? 'PostListing' : 'Login', accent: true },
     { icon: user ? 'person-outline' : 'log-in-outline', label: user ? user.name : 'Hiditra', screen: 'Login' },
-    { icon: 'heart-outline',            label: 'Ny lisitra voatahiry' },
+    { icon: 'heart-outline',              label: 'Ny lisitra voatahiry' },
     { icon: 'information-circle-outline', label: 'Momba ny Trano' },
   ];
 
@@ -61,7 +60,7 @@ export function DrawerOverlay({ navRef }: Props) {
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
-      {/* Backdrop — dark scrim */}
+      {/* Dark backdrop */}
       <Animated.View
         style={[StyleSheet.absoluteFill, styles.backdrop, { opacity: backdropOp }]}
         pointerEvents="auto"
@@ -74,18 +73,6 @@ export function DrawerOverlay({ navRef }: Props) {
         style={[styles.drawer, { transform: [{ translateX }] }]}
         pointerEvents="auto"
       >
-        {/* Rich green gradient background */}
-        <LinearGradient
-          colors={['#0D3D20', '#0A2916']}
-          start={{ x: 0.1, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={StyleSheet.absoluteFill}
-        />
-        {/* Subtle top-left glow for depth */}
-        <View style={styles.glow} />
-        {/* Right-edge glass rim */}
-        <View style={styles.rimRight} />
-
         {/* Logo */}
         <View style={styles.logoWrap}>
           <Text style={styles.logoText}>trano</Text>
@@ -119,7 +106,7 @@ export function DrawerOverlay({ navRef }: Props) {
 
 const styles = StyleSheet.create({
   backdrop: {
-    backgroundColor: 'rgba(8, 20, 14, 0.72)',
+    backgroundColor: 'rgba(0,0,0,0.45)',
   },
   drawer: {
     position:          'absolute',
@@ -127,38 +114,21 @@ const styles = StyleSheet.create({
     bottom:             0,
     left:               0,
     width:              DRAWER_W,
-    overflow:          'hidden',
+    backgroundColor:   COLORS.primary,
     paddingTop:         STATUS_BAR + 24,
     paddingHorizontal:  26,
     shadowColor:       '#000',
-    shadowOpacity:      0.35,
-    shadowRadius:       24,
-    shadowOffset:      { width: 8, height: 0 },
-    elevation:          16,
+    shadowOpacity:      0.25,
+    shadowRadius:       16,
+    shadowOffset:      { width: 4, height: 0 },
+    elevation:          12,
   },
-  glow: {
-    position:        'absolute',
-    top:             -80,
-    left:            -80,
-    width:            280,
-    height:           280,
-    borderRadius:     140,
-    backgroundColor: 'rgba(34,130,65,0.2)',
-  },
-  rimRight: {
-    position:        'absolute',
-    top:              0,
-    bottom:           0,
-    right:            0,
-    width:            1,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-  },
-  logoWrap:  { flexDirection: 'row', alignItems: 'flex-end', gap: 3, marginBottom: 2 },
-  logoText:  { fontSize: 30, fontWeight: '800', color: COLORS.surface, letterSpacing: -0.5 },
-  logoDot:   { width: 7, height: 7, borderRadius: 4, backgroundColor: COLORS.accent, marginBottom: 6 },
-  userName:  { color: 'rgba(255,255,255,0.5)', fontSize: 13, marginTop: 2 },
-  divider:   { height: 1, backgroundColor: 'rgba(255,255,255,0.11)', marginVertical: 22 },
-  menuItem:  { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 14 },
-  menuLabel: { fontSize: 15, fontWeight: '500', color: 'rgba(255,255,255,0.82)' },
+  logoWrap:        { flexDirection: 'row', alignItems: 'flex-end', gap: 3, marginBottom: 2 },
+  logoText:        { fontSize: 30, fontWeight: '800', color: COLORS.surface, letterSpacing: -0.5 },
+  logoDot:         { width: 7, height: 7, borderRadius: 4, backgroundColor: COLORS.accent, marginBottom: 6 },
+  userName:        { color: 'rgba(255,255,255,0.5)', fontSize: 13, marginTop: 2 },
+  divider:         { height: 1, backgroundColor: 'rgba(255,255,255,0.12)', marginVertical: 22 },
+  menuItem:        { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 14 },
+  menuLabel:       { fontSize: 15, fontWeight: '500', color: 'rgba(255,255,255,0.82)' },
   menuLabelAccent: { color: COLORS.accent, fontWeight: '700' },
 });
