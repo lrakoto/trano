@@ -26,21 +26,22 @@ export function DrawerOverlay({ navRef }: Props) {
   const { user } = useAuth();
 
   const translateX = useRef(new Animated.Value(-DRAWER_W)).current;
-  const backdropOp = useRef(new Animated.Value(0)).current;
-  const visible    = useRef(false);
 
+  // Animate every time `open` changes — no visibility gating
   useEffect(() => {
-    if (open && !visible.current) {
-      visible.current = true;
-      Animated.parallel([
-        Animated.spring(translateX, { toValue: 0,         useNativeDriver: true, damping: 22, stiffness: 180 }),
-        Animated.timing(backdropOp, { toValue: 1,         useNativeDriver: true, duration: 220 }),
-      ]).start();
-    } else if (!open && visible.current) {
-      Animated.parallel([
-        Animated.timing(translateX, { toValue: -DRAWER_W, useNativeDriver: true, duration: 200 }),
-        Animated.timing(backdropOp, { toValue: 0,         useNativeDriver: true, duration: 200 }),
-      ]).start(() => { visible.current = false; });
+    if (open) {
+      Animated.spring(translateX, {
+        toValue:        0,
+        useNativeDriver: true,
+        damping:         22,
+        stiffness:       180,
+      }).start();
+    } else {
+      Animated.timing(translateX, {
+        toValue:         -DRAWER_W,
+        useNativeDriver: true,
+        duration:         200,
+      }).start();
     }
   }, [open]);
 
@@ -56,24 +57,20 @@ export function DrawerOverlay({ navRef }: Props) {
     { icon: 'information-circle-outline', label: 'Momba ny Trano' },
   ];
 
-  if (!open) return null;
-
   return (
-    <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
-      {/* Dark backdrop */}
-      <Animated.View
-        style={[StyleSheet.absoluteFill, styles.backdrop, { opacity: backdropOp }]}
-        pointerEvents="auto"
-      >
+    // pointerEvents="none" when closed so touches pass through to the app
+    <View style={StyleSheet.absoluteFill} pointerEvents={open ? 'box-none' : 'none'}>
+
+      {/* Transparent tap-to-close area — no dimming */}
+      {open && (
         <Pressable style={StyleSheet.absoluteFill} onPress={closeDrawer} />
-      </Animated.View>
+      )}
 
       {/* Drawer panel */}
       <Animated.View
         style={[styles.drawer, { transform: [{ translateX }] }]}
         pointerEvents="auto"
       >
-        {/* Logo */}
         <View style={styles.logoWrap}>
           <Text style={styles.logoText}>trano</Text>
           <View style={styles.logoDot} />
@@ -105,9 +102,6 @@ export function DrawerOverlay({ navRef }: Props) {
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
-    backgroundColor: 'rgba(0,0,0,0.45)',
-  },
   drawer: {
     position:          'absolute',
     top:                0,
