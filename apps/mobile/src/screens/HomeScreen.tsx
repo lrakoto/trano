@@ -3,6 +3,7 @@ import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   ActivityIndicator, TextInput, Dimensions, Keyboard, Platform,
 } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapView, { Marker, Callout } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
@@ -177,48 +178,63 @@ export function HomeScreen() {
 
 function ListingCard({ listing, onPress }: { listing: Listing; onPress: () => void }) {
   return (
-    <TouchableOpacity style={card.container} onPress={onPress} activeOpacity={0.8}>
-      {/* Square satellite thumbnail */}
-      <View style={card.image}>
-        <SatelliteThumb
-          latitude={listing.latitude}
-          longitude={listing.longitude}
-          width={IMAGE_SIZE}
-          height={IMAGE_SIZE}
-          delta={0.001}
+    <TouchableOpacity style={card.outer} onPress={onPress} activeOpacity={0.8}>
+      <LinearGradient
+        colors={['rgba(255,255,255,0.97)', 'rgba(236,236,236,0.91)']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+        style={card.container}
+      >
+        {/* Top gloss sheen */}
+        <LinearGradient
+          colors={['rgba(255,255,255,0.6)', 'rgba(255,255,255,0)']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+          style={card.gloss}
         />
-        <View style={card.typePill}>
-          <Text style={card.typePillText}>
-            {listing.listingType === 'RENT' ? 'Hofana' : 'Amidy'}
+
+        {/* Square satellite thumbnail */}
+        <View style={card.image}>
+          <SatelliteThumb
+            latitude={listing.latitude}
+            longitude={listing.longitude}
+            width={IMAGE_SIZE}
+            height={IMAGE_SIZE}
+            delta={0.001}
+          />
+          <View style={card.typePill}>
+            <Text style={card.typePillText}>
+              {listing.listingType === 'RENT' ? 'Hofana' : 'Amidy'}
+            </Text>
+          </View>
+        </View>
+
+        {/* Info */}
+        <View style={card.info}>
+          <Text style={card.price}>
+            {Number(listing.priceMga).toLocaleString('fr-MG')}
+            <Text style={card.priceSuffix}> MGA</Text>
           </Text>
+
+          <Text style={card.title} numberOfLines={1}>{listing.title}</Text>
+
+          <View style={card.locationRow}>
+            <Ionicons name="location-outline" size={11} color={COLORS.textMuted} />
+            <Text style={card.location} numberOfLines={1}>
+              {listing.city} · {listing.region}
+            </Text>
+          </View>
+
+          <View style={card.statsRow}>
+            {listing.bedrooms  != null && <StatChip icon="bed-outline"    label={`${listing.bedrooms}`} />}
+            {listing.bathrooms != null && <StatChip icon="water-outline"  label={`${listing.bathrooms}`} />}
+            {listing.areaSqm   != null && <StatChip icon="resize-outline" label={`${listing.areaSqm}m²`} />}
+            {listing.owner.isVerified && (
+              <Ionicons name="checkmark-circle" size={14} color={COLORS.primaryLight} />
+            )}
+          </View>
         </View>
-      </View>
-
-      {/* Info */}
-      <View style={card.info}>
-        <Text style={card.price}>
-          {Number(listing.priceMga).toLocaleString('fr-MG')}
-          <Text style={card.priceSuffix}> MGA</Text>
-        </Text>
-
-        <Text style={card.title} numberOfLines={1}>{listing.title}</Text>
-
-        <View style={card.locationRow}>
-          <Ionicons name="location-outline" size={11} color={COLORS.textMuted} />
-          <Text style={card.location} numberOfLines={1}>
-            {listing.city} · {listing.region}
-          </Text>
-        </View>
-
-        <View style={card.statsRow}>
-          {listing.bedrooms  != null && <StatChip icon="bed-outline"    label={`${listing.bedrooms}`} />}
-          {listing.bathrooms != null && <StatChip icon="water-outline"  label={`${listing.bathrooms}`} />}
-          {listing.areaSqm   != null && <StatChip icon="resize-outline" label={`${listing.areaSqm}m²`} />}
-          {listing.owner.isVerified && (
-            <Ionicons name="checkmark-circle" size={14} color={COLORS.primaryLight} />
-          )}
-        </View>
-      </View>
+      </LinearGradient>
     </TouchableOpacity>
   );
 }
@@ -309,19 +325,31 @@ const styles = StyleSheet.create({
 const IMAGE_SIZE = 88;
 
 const card = StyleSheet.create({
+  // Shadow wrapper — keeps shadow visible while inner can overflow:hidden
+  outer: {
+    borderRadius:  14,
+    marginBottom:   9,
+    shadowColor:   '#000',
+    shadowOpacity:  0.09,
+    shadowRadius:   8,
+    shadowOffset:  { width: 0, height: 2 },
+    elevation:      3,
+  },
+  // LinearGradient container — clips image corners and carries the glass gradient
   container: {
-    flexDirection:   'row',
-    backgroundColor: COLORS.surface,
-    borderRadius:    14,
-    marginBottom:     9,
-    overflow:        'hidden',
-    borderWidth:      1,
-    borderColor:     COLORS.border,
-    shadowColor:     '#000',
-    shadowOpacity:   0.05,
-    shadowRadius:    6,
-    shadowOffset:    { width: 0, height: 1 },
-    elevation:        2,
+    flexDirection: 'row',
+    borderRadius:  14,
+    overflow:      'hidden',
+    borderWidth:    1,
+    borderColor:   'rgba(255,255,255,0.88)',
+  },
+  gloss: {
+    position: 'absolute',
+    top:       0,
+    left:      0,
+    right:     0,
+    height:   '50%',
+    zIndex:    1,
   },
   image: {
     width:           IMAGE_SIZE,

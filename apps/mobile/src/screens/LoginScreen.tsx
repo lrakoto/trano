@@ -1,9 +1,11 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity,
   StyleSheet, Alert, KeyboardAvoidingView, Platform,
-  Animated,
 } from 'react-native';
+// lottie-react-native works in production/dev builds only (not Expo Go):
+// import LottieView from 'lottie-react-native';
+// const globeAnim = require('../../assets/globe.json');
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAuth } from '../context/AuthContext';
@@ -11,34 +13,13 @@ import { GlassButton } from '../components/GlassButton';
 import { COLORS } from '../constants';
 import type { RootStackParamList } from '../navigation';
 
-// Uncomment and drop a Lottie globe JSON into assets/ to upgrade:
-// import LottieView from 'lottie-react-native';
-// const globeAnim = require('../../assets/globe.json');
-
 type Props = NativeStackScreenProps<RootStackParamList, 'Login'>;
-
-const GLOBES = ['🌍', '🌎', '🌏'];
 
 export function LoginScreen({ navigation }: Props) {
   const { login } = useAuth();
   const [phone,    setPhone]    = useState('');
   const [password, setPassword] = useState('');
   const [loading,  setLoading]  = useState(false);
-  const [globeIdx, setGlobeIdx] = useState(0);
-
-  const fadeAnim = useRef(new Animated.Value(1)).current;
-
-  // Cross-fade between 🌍 🌎 🌏 — much smoother than a jump cut
-  useEffect(() => {
-    const cycle = () => {
-      Animated.timing(fadeAnim, { toValue: 0, duration: 260, useNativeDriver: true }).start(() => {
-        setGlobeIdx(i => (i + 1) % 3);
-        Animated.timing(fadeAnim, { toValue: 1, duration: 260, useNativeDriver: true }).start();
-      });
-    };
-    const t = setInterval(cycle, 900);
-    return () => clearInterval(t);
-  }, []);
 
   const handleLogin = async () => {
     if (!phone || !password) {
@@ -65,13 +46,6 @@ export function LoginScreen({ navigation }: Props) {
       </TouchableOpacity>
 
       <View style={styles.inner}>
-        {/* Globe — swap for LottieView once globe.json is in assets/ */}
-        <View style={styles.globeWrap}>
-          <Animated.Text style={[styles.globeEmoji, { opacity: fadeAnim }]}>
-            {GLOBES[globeIdx]}
-          </Animated.Text>
-        </View>
-
         <View style={styles.logoWrap}>
           <Text style={styles.logoText}>trano</Text>
           <View style={styles.logoDot} />
@@ -122,18 +96,15 @@ const styles = StyleSheet.create({
     paddingBottom:     60,
   },
 
-  globeWrap:  { alignItems: 'center', marginBottom: 16 },
-  globeEmoji: { fontSize: 72 },
-
   logoWrap: {
     flexDirection:  'row',
     alignItems:     'flex-end',
     justifyContent: 'center',
-    gap:             1,        // tight against the 'o'
+    gap:             1,
     marginBottom:    6,
   },
   logoText: { fontSize: 42, fontWeight: '800', color: COLORS.primary, letterSpacing: -1 },
-  logoDot:  { width: 9, height: 9, borderRadius: 5, backgroundColor: COLORS.accent, marginBottom: 8 },
+  logoDot:  { width: 6, height: 6, borderRadius: 3, backgroundColor: COLORS.accent, marginBottom: 8 },
   subtitle: { fontSize: 15, color: COLORS.textMuted, textAlign: 'center', marginBottom: 32 },
 
   label: { fontSize: 14, fontWeight: '600', color: COLORS.text, marginBottom: 6, marginTop: 16 },

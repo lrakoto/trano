@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
   },
   logoWrap:        { flexDirection: 'row', alignItems: 'flex-end', gap: 1, marginBottom: 2 },
   logoText:        { fontSize: 30, fontWeight: '800', color: COLORS.surface, letterSpacing: -0.5 },
-  logoDot:         { width: 7, height: 7, borderRadius: 4, backgroundColor: COLORS.accent, marginBottom: 6 },
+  logoDot:         { width: 5, height: 5, borderRadius: 3, backgroundColor: COLORS.accent, marginBottom: 6 },
   userName:        { color: 'rgba(255,255,255,0.5)', fontSize: 13, marginTop: 2 },
   divider:         { height: 1, backgroundColor: 'rgba(255,255,255,0.12)', marginVertical: 22 },
   menuItem:        { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 14 },

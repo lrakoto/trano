@@ -11,7 +11,7 @@ const devHost: string =
 
 export const API_BASE_URL = __DEV__
   ? `http://${devHost}:3000`
-  : 'https://api.trano.mg';
+  : 'https://api.trano.app';
 
 // Pre-filled WhatsApp message in Malagasy
 export const WHATSAPP_PREFILL = (listingTitle: string) =>
