@@ -38,8 +38,8 @@ const querySchema = z.object({
 });
 
 export async function listingRoutes(app: FastifyInstance) {
-  // GET /listings — paginated, filterable list
-  app.get('/', async (request) => {
+  // GET /listings — paginated, filterable list (150 req/min per IP)
+  app.get('/', { config: { rateLimit: { max: 150, timeWindow: '1 minute' } } }, async (request) => {
     const { page, pageSize, region, listingType, propertyType, minPrice, maxPrice } =
       querySchema.parse(request.query);
 
@@ -70,8 +70,8 @@ export async function listingRoutes(app: FastifyInstance) {
     return { data, total, page, pageSize, totalPages: Math.ceil(total / pageSize) };
   });
 
-  // GET /listings/:id — full detail
-  app.get('/:id', async (request, reply) => {
+  // GET /listings/:id — full detail (150 req/min per IP)
+  app.get('/:id', { config: { rateLimit: { max: 150, timeWindow: '1 minute' } } }, async (request, reply) => {
     const { id } = request.params as { id: string };
     const listing = await prisma.listing.findUnique({
       where: { id },
@@ -86,10 +86,20 @@ export async function listingRoutes(app: FastifyInstance) {
     return listing;
   });
 
-  // POST /listings — create (auth required)
-  app.post('/', { onRequest: [app.authenticate] }, async (request, reply) => {
-    const body = createListingSchema.parse(request.body);
+  // POST /listings — create (auth required, max 10 active listings per user)
+  app.post('/', {
+    onRequest: [app.authenticate],
+    config:    { rateLimit: { max: 20, timeWindow: '1 hour' } },
+  }, async (request, reply) => {
+    const body   = createListingSchema.parse(request.body);
     const userId = (request.user as any).sub as string;
+
+    const activeCount = await prisma.listing.count({
+      where: { ownerId: userId, status: 'ACTIVE' },
+    });
+    if (activeCount >= 10) {
+      return reply.status(429).send({ error: 'Active listing limit reached (10 max)' });
+    }
 
     const listing = await prisma.listing.create({
       data: { ...body, priceMga: BigInt(body.priceMga), ownerId: userId },
@@ -99,22 +109,37 @@ export async function listingRoutes(app: FastifyInstance) {
   });
 
   // POST /listings/:id/report — flag a listing (auth required)
-  app.post('/:id/report', { onRequest: [app.authenticate] }, async (request, reply) => {
+  app.post('/:id/report', {
+    onRequest: [app.authenticate],
+    config:    { rateLimit: { max: 30, timeWindow: '1 hour' } },
+  }, async (request, reply) => {
     const { id }     = request.params as { id: string };
-    const { reason } = z.object({ reason: z.string().min(5) }).parse(request.body);
+    const { reason } = z.object({ reason: z.string().min(5).max(500) }).parse(request.body);
     const userId     = (request.user as any).sub as string;
 
-    await prisma.$transaction([
+    // Prevent the same user from reporting the same listing twice
+    const alreadyReported = await prisma.report.findFirst({
+      where: { listingId: id, reporterId: userId },
+    });
+    if (alreadyReported) {
+      return reply.status(409).send({ error: 'Already reported' });
+    }
+
+    const [, updated] = await prisma.$transaction([
       prisma.report.create({ data: { listingId: id, reporterId: userId, reason } }),
       prisma.listing.update({
         where: { id },
-        data: {
-          reportCount: { increment: 1 },
-          // Auto-quarantine after 5 reports pending admin review
-          status: { set: undefined },
-        },
+        data:  { reportCount: { increment: 1 } },
       }),
     ]);
+
+    // Auto-quarantine after 5 reports — pending admin review
+    if (updated.reportCount >= 5) {
+      await prisma.listing.update({
+        where: { id },
+        data:  { isModerated: true },
+      });
+    }
 
     return { success: true };
   });

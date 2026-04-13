@@ -1,7 +1,10 @@
 {
   "name": "trano",
   "private": true,
-  "workspaces": ["apps/*", "packages/*"],
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
@@ -11,5 +14,9 @@
   "devDependencies": {
     "turbo": "^2.0.0",
     "typescript": "^5.4.0"
+  },
+  "dependencies": {
+    "expo-blur": "^55.0.14",
+    "lottie-react-native": "^7.3.6"
   }
 }
