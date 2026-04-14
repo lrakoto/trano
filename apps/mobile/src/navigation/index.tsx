@@ -11,6 +11,7 @@ import { CitiesScreen } from '../screens/CitiesScreen';
 import { InboxScreen } from '../screens/InboxScreen';
 import { ListingDetailScreen } from '../screens/ListingDetailScreen';
 import { PostListingScreen } from '../screens/PostListingScreen';
+import { MyListingsScreen } from '../screens/MyListingsScreen';
 import { LoginScreen } from '../screens/LoginScreen';
 import { RegisterScreen } from '../screens/RegisterScreen';
 import { COLORS } from '../constants';
@@ -21,6 +22,7 @@ export type RootStackParamList = {
   Tabs:          undefined;
   ListingDetail: { listingId: string };
   PostListing:   undefined;
+  MyListings:    undefined;
   Login:         undefined;
   Register:      undefined;
 };
@@ -120,6 +122,7 @@ export function RootNavigator() {
         }}
       />
       <Stack.Screen name="PostListing"   component={PostListingScreen}   options={{ title: 'Manampy lisitra' }} />
+      <Stack.Screen name="MyListings"    component={MyListingsScreen}    options={{ headerShown: false }} />
       <Stack.Screen name="Login"    component={LoginScreen}    options={{ presentation: 'modal', headerShown: false }} />
       <Stack.Screen name="Register" component={RegisterScreen} options={{ presentation: 'modal', headerShown: false }} />
     </Stack.Navigator>

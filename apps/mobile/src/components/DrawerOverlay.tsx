@@ -72,6 +72,7 @@ export function DrawerOverlay({ navRef }: Props) {
 
   const menuItems: MenuItem[] = [
     { icon: 'add-circle-outline',         label: 'Hanampy lisitra',      onPress: () => go(user ? 'PostListing' : 'Login'), accent: true },
+    ...(user ? [{ icon: 'home-outline' as IoniconsName,  label: 'Ny lisitray',          onPress: () => go('MyListings') }] : []),
     { icon: 'heart-outline',              label: 'Ny lisitra voatahiry',  onPress: () => goTab('Saved') },
     { icon: 'information-circle-outline', label: 'Momba ny Trano',        onPress: handleAbout },
     ...(!user ? [{ icon: 'log-in-outline' as IoniconsName, label: 'Hiditra', onPress: () => go('Login') }] : []),
