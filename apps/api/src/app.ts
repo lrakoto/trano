@@ -1,11 +1,15 @@
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import jwt from '@fastify/jwt';
+import multipart from '@fastify/multipart';
 import rateLimit from '@fastify/rate-limit';
 import { ZodError } from 'zod';
+import fs from 'fs';
+import path from 'path';
 import { authRoutes } from './routes/auth';
 import { listingRoutes } from './routes/listings';
 import { userRoutes } from './routes/users';
+import { imageRoutes, UPLOAD_DIR } from './routes/images';
 
 export function buildApp() {
   const app = Fastify({ logger: true });
@@ -15,6 +19,9 @@ export function buildApp() {
   app.register(cors, {
     origin: process.env.ALLOWED_ORIGINS?.split(',') ?? true,
   });
+
+  // ── Multipart (image uploads, 8 MB limit) ────────────────────────────────
+  app.register(multipart, { limits: { fileSize: 8 * 1024 * 1024 } });
 
   // ── JWT (24 h expiry) ─────────────────────────────────────────────────────
   app.register(jwt, {
@@ -58,8 +65,20 @@ export function buildApp() {
   app.register(authRoutes,    { prefix: '/auth' });
   app.register(listingRoutes, { prefix: '/listings' });
   app.register(userRoutes,    { prefix: '/users' });
+  app.register(imageRoutes,   { prefix: '/listings' });
 
   app.get('/health', async () => ({ status: 'ok' }));
+
+  // ── Serve uploaded images ─────────────────────────────────────────────────
+  app.get('/uploads/:filename', async (request, reply) => {
+    const { filename } = request.params as { filename: string };
+    const safe         = path.basename(filename);          // prevent path traversal
+    const filePath     = path.join(UPLOAD_DIR, safe);
+    if (!fs.existsSync(filePath)) return reply.status(404).send({ error: 'Not found' });
+    const ext         = path.extname(safe).toLowerCase();
+    const contentType = ({ '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp' } as Record<string, string>)[ext] ?? 'application/octet-stream';
+    return reply.type(contentType).send(fs.createReadStream(filePath));
+  });
 
   app.get('/privacy', async (_req, reply) => {
     reply.type('text/html; charset=utf-8');

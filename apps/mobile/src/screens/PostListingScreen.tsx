@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, TextInput, ScrollView, TouchableOpacity,
-  StyleSheet, Alert, KeyboardAvoidingView, Platform, ActivityIndicator,
+  StyleSheet, Alert, KeyboardAvoidingView, Platform, ActivityIndicator, Image,
 } from 'react-native';
 import * as Location from 'expo-location';
+import * as ImagePicker from 'expo-image-picker';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAuth } from '../context/AuthContext';
@@ -12,10 +13,8 @@ import { SatelliteThumb } from '../components/SatelliteThumb';
 import { KeyboardDismissBar } from '../components/KeyboardDismissBar';
 import { COLORS, API_BASE_URL } from '../constants';
 import { REGIONS } from '@trano/shared';
-import type { RegionValue, ListingType, PropertyType } from '@trano/shared';
+import type { RegionValue, ListingType, PropertyType, ListingImage } from '@trano/shared';
 import type { RootStackParamList } from '../navigation';
-
-// TODO: image upload
 
 type FormState = {
   title:           string;
@@ -52,8 +51,10 @@ export function PostListingScreen() {
   const listingId    = (route.params as any)?.listingId as string | undefined;
   const isEdit       = !!listingId;
   const { token }    = useAuth();
-  const [loading,    setLoading]    = useState(false);
-  const [locLoading, setLocLoading] = useState(false);
+  const [loading,        setLoading]        = useState(false);
+  const [locLoading,     setLocLoading]     = useState(false);
+  const [pickedImages,   setPickedImages]   = useState<string[]>([]);
+  const [existingImages, setExistingImages] = useState<ListingImage[]>([]);
   const [form, setForm] = useState<FormState>({
     title: '', description: '', priceMga: '', addressFreeform: '',
     city: '', region: 'ANALAMANGA', latitude: '', longitude: '',
@@ -66,22 +67,25 @@ export function PostListingScreen() {
     if (!listingId) return;
     fetch(`${API_BASE_URL}/listings/${listingId}`)
       .then((r) => r.json())
-      .then((l) => setForm({
-        title:           l.title,
-        description:     l.description,
-        priceMga:        String(l.priceMga),
-        addressFreeform: l.addressFreeform,
-        city:            l.city,
-        region:          l.region,
-        latitude:        String(l.latitude),
-        longitude:       String(l.longitude),
-        whatsappContact: l.whatsappContact ?? '',
-        listingType:     l.listingType,
-        propertyType:    l.propertyType,
-        bedrooms:        l.bedrooms  != null ? String(l.bedrooms)  : '',
-        bathrooms:       l.bathrooms != null ? String(l.bathrooms) : '',
-        areaSqm:         l.areaSqm   != null ? String(l.areaSqm)   : '',
-      }))
+      .then((l) => {
+        setForm({
+          title:           l.title,
+          description:     l.description,
+          priceMga:        String(l.priceMga),
+          addressFreeform: l.addressFreeform,
+          city:            l.city,
+          region:          l.region,
+          latitude:        String(l.latitude),
+          longitude:       String(l.longitude),
+          whatsappContact: l.whatsappContact ?? '',
+          listingType:     l.listingType,
+          propertyType:    l.propertyType,
+          bedrooms:        l.bedrooms  != null ? String(l.bedrooms)  : '',
+          bathrooms:       l.bathrooms != null ? String(l.bathrooms) : '',
+          areaSqm:         l.areaSqm   != null ? String(l.areaSqm)   : '',
+        });
+        setExistingImages(l.images ?? []);
+      })
       .catch(() => Alert.alert('Diso', 'Tsy afaka naka ny lisitra'));
   }, [listingId]);
 
@@ -108,6 +112,59 @@ export function PostListingScreen() {
       Alert.alert('Diso', 'Tsy afaka mahita ny toerana');
     } finally {
       setLocLoading(false);
+    }
+  };
+
+  const totalImages = existingImages.length + pickedImages.length;
+
+  const handlePickImages = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Tsy azo', 'Ilaina ny alalana haka sary');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsMultipleSelection: true,
+      quality: 0.75,
+      selectionLimit: Math.max(1, 10 - totalImages),
+    });
+    if (!result.canceled) {
+      setPickedImages((prev) =>
+        [...prev, ...result.assets.map((a) => a.uri)].slice(0, 10 - existingImages.length),
+      );
+    }
+  };
+
+  const removePickedImage = (index: number) => {
+    setPickedImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const removeExistingImage = async (image: ListingImage) => {
+    if (!listingId) return;
+    try {
+      await fetch(`${API_BASE_URL}/listings/${listingId}/images/${image.id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setExistingImages((prev) => prev.filter((img) => img.id !== image.id));
+    } catch {
+      Alert.alert('Diso', 'Tsy afaka namafa ny sary');
+    }
+  };
+
+  const uploadImages = async (id: string) => {
+    for (const uri of pickedImages) {
+      const filename  = uri.split('/').pop() ?? 'photo.jpg';
+      const ext       = filename.split('.').pop()?.toLowerCase() ?? 'jpg';
+      const mimeType  = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
+      const formData  = new FormData();
+      formData.append('file', { uri, name: filename, type: mimeType } as any);
+      await fetch(`${API_BASE_URL}/listings/${id}/images`, {
+        method:  'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body:    formData,
+      });
     }
   };
 
@@ -155,6 +212,9 @@ export function PostListingScreen() {
         const err = await res.json();
         throw new Error(err.message ?? err.error ?? 'Tsy vita');
       }
+      const created = await res.json();
+      const targetId = isEdit ? listingId! : created.id;
+      if (pickedImages.length > 0) await uploadImages(targetId);
       Alert.alert('Vita!', isEdit ? 'Voanova ny lisitra.' : 'Ny lisitrao dia narosona soa aman-tsara.', [
         { text: 'OK', onPress: () => navigation.goBack() },
       ]);
@@ -316,6 +376,47 @@ export function PostListingScreen() {
             placeholder="+261 34 XX XXX XX" />
         </Field>
 
+        {/* ── Images ────────────────────────────────────────────── */}
+        <Field label="Sary (10 farafaharetsiny)">
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            <View style={imgStyles.row}>
+              {/* Existing images (edit mode) */}
+              {existingImages.map((img) => (
+                <View key={img.id} style={imgStyles.thumb}>
+                  <Image source={{ uri: img.url }} style={imgStyles.img} />
+                  <TouchableOpacity
+                    style={imgStyles.removeBtn}
+                    onPress={() => removeExistingImage(img)}
+                    hitSlop={4}
+                  >
+                    <Text style={imgStyles.removeText}>✕</Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+              {/* Newly picked images */}
+              {pickedImages.map((uri, i) => (
+                <View key={uri} style={imgStyles.thumb}>
+                  <Image source={{ uri }} style={imgStyles.img} />
+                  <TouchableOpacity
+                    style={imgStyles.removeBtn}
+                    onPress={() => removePickedImage(i)}
+                    hitSlop={4}
+                  >
+                    <Text style={imgStyles.removeText}>✕</Text>
+                  </TouchableOpacity>
+                </View>
+              ))}
+              {/* Add button */}
+              {totalImages < 10 && (
+                <TouchableOpacity style={imgStyles.addBtn} onPress={handlePickImages}>
+                  <Text style={imgStyles.addIcon}>+</Text>
+                  <Text style={imgStyles.addLabel}>Sary</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </ScrollView>
+        </Field>
+
         <GlassButton
           label={isEdit ? 'Hanova' : 'Manampy lisitra'}
           onPress={handleSubmit}
@@ -409,4 +510,36 @@ const styles = StyleSheet.create({
 
   button:     { marginTop: 32 },
   editBanner: { fontSize: 13, fontWeight: '700', color: COLORS.accent, marginBottom: 4 },
+});
+
+const imgStyles = StyleSheet.create({
+  row:    { flexDirection: 'row', gap: 10, paddingVertical: 4 },
+  thumb:  { width: 80, height: 80, borderRadius: 8, overflow: 'hidden', position: 'relative' },
+  img:    { width: 80, height: 80, borderRadius: 8 },
+  removeBtn: {
+    position:        'absolute',
+    top:              3,
+    right:            3,
+    width:            20,
+    height:           20,
+    borderRadius:     10,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    alignItems:      'center',
+    justifyContent:  'center',
+  },
+  removeText: { color: '#fff', fontSize: 11, fontWeight: '700', lineHeight: 14 },
+  addBtn: {
+    width:           80,
+    height:          80,
+    borderRadius:     8,
+    borderWidth:      1.5,
+    borderColor:     COLORS.border,
+    borderStyle:     'dashed',
+    backgroundColor: COLORS.surface,
+    alignItems:      'center',
+    justifyContent:  'center',
+    gap:              2,
+  },
+  addIcon:  { fontSize: 22, color: COLORS.primaryLight, fontWeight: '300' },
+  addLabel: { fontSize: 11, color: COLORS.textMuted, fontWeight: '600' },
 });

@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
-  StyleSheet, Linking, ActivityIndicator, Dimensions,
+  StyleSheet, Linking, ActivityIndicator, Dimensions, Image, FlatList,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,15 +16,17 @@ import type { RootStackParamList } from '../navigation';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ListingDetail'>;
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
+const SCREEN_WIDTH  = Dimensions.get('window').width;
+const GALLERY_HEIGHT = 240;
 
 export function ListingDetailScreen({ route, navigation }: Props) {
   const { listingId } = route.params;
   const { user }              = useAuth();
   const { toggle, isSaved }   = useSaved();
   const insets                = useSafeAreaInsets();
-  const [listing, setListing] = useState<Listing | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [listing,      setListing]      = useState<Listing | null>(null);
+  const [loading,      setLoading]      = useState(true);
+  const [activeImg,    setActiveImg]    = useState(0);
 
   useEffect(() => {
     fetch(`${API_BASE_URL}/listings/${listingId}`)
@@ -57,15 +59,49 @@ export function ListingDetailScreen({ route, navigation }: Props) {
         contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Satellite header */}
+        {/* ── Photo gallery or satellite fallback ─────────────── */}
         <View style={styles.satellite}>
-          <SatelliteThumb
-            latitude={listing.latitude}
-            longitude={listing.longitude}
-            width={SCREEN_WIDTH}
-            height={220}
-            delta={0.0015}
-          />
+          {listing.images.length > 0 ? (
+            <>
+              <FlatList
+                data={listing.images}
+                keyExtractor={(img) => img.id}
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                onViewableItemsChanged={({ viewableItems }) => {
+                  if (viewableItems[0]) setActiveImg(viewableItems[0].index ?? 0);
+                }}
+                viewabilityConfig={{ itemVisiblePercentThreshold: 50 }}
+                renderItem={({ item }) => (
+                  <Image
+                    source={{ uri: item.url }}
+                    style={{ width: SCREEN_WIDTH, height: GALLERY_HEIGHT }}
+                    resizeMode="cover"
+                  />
+                )}
+              />
+              {/* Dot indicators */}
+              {listing.images.length > 1 && (
+                <View style={styles.dots}>
+                  {listing.images.map((_, i) => (
+                    <View
+                      key={i}
+                      style={[styles.dot, i === activeImg && styles.dotActive]}
+                    />
+                  ))}
+                </View>
+              )}
+            </>
+          ) : (
+            <SatelliteThumb
+              latitude={listing.latitude}
+              longitude={listing.longitude}
+              width={SCREEN_WIDTH}
+              height={GALLERY_HEIGHT}
+              delta={0.0015}
+            />
+          )}
           <View style={styles.satelliteOverlay}>
             <View style={styles.satelliteTags}>
               <Text style={styles.satelliteTag}>
@@ -159,8 +195,24 @@ const styles = StyleSheet.create({
   error:       { textAlign: 'center', marginTop: 40, color: COLORS.textMuted },
   scroll:      { flex: 1 },
 
-  // Satellite
+  // Gallery / satellite
   satellite:        { position: 'relative' },
+  dots: {
+    position:       'absolute',
+    bottom:          48,
+    left:             0,
+    right:            0,
+    flexDirection:  'row',
+    justifyContent: 'center',
+    gap:              5,
+  },
+  dot: {
+    width:           6,
+    height:          6,
+    borderRadius:    3,
+    backgroundColor: 'rgba(255,255,255,0.5)',
+  },
+  dotActive: { backgroundColor: '#fff', width: 18 },
   satelliteOverlay: {
     position:        'absolute',
     bottom:           10,
