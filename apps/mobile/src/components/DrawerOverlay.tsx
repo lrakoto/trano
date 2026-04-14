@@ -23,11 +23,10 @@ type MenuItem = { icon: IoniconsName; label: string; screen?: keyof RootStackPar
 
 export function DrawerOverlay({ navRef }: Props) {
   const { open, closeDrawer } = useDrawer();
-  const { user } = useAuth();
+  const { user, logout }      = useAuth();
 
   const translateX = useRef(new Animated.Value(-DRAWER_W)).current;
 
-  // Animate every time `open` changes — no visibility gating
   useEffect(() => {
     if (open) {
       Animated.spring(translateX, {
@@ -50,18 +49,20 @@ export function DrawerOverlay({ navRef }: Props) {
     if (screen) setTimeout(() => navRef.navigate(screen as any), 210);
   };
 
+  const handleLogout = () => {
+    closeDrawer();
+    logout();
+  };
+
   const menuItems: MenuItem[] = [
-    { icon: 'add-circle-outline',         label: 'Hanampy lisitra',       screen: user ? 'PostListing' : 'Login', accent: true },
-    { icon: user ? 'person-outline' : 'log-in-outline', label: user ? user.name : 'Hiditra', screen: 'Login' },
+    { icon: 'add-circle-outline',         label: 'Hanampy lisitra', screen: user ? 'PostListing' : 'Login', accent: true },
     { icon: 'heart-outline',              label: 'Ny lisitra voatahiry' },
     { icon: 'information-circle-outline', label: 'Momba ny Trano' },
+    ...(!user ? [{ icon: 'log-in-outline' as IoniconsName, label: 'Hiditra', screen: 'Login' as keyof RootStackParamList }] : []),
   ];
 
   return (
-    // pointerEvents="none" when closed so touches pass through to the app
     <View style={StyleSheet.absoluteFill} pointerEvents={open ? 'box-none' : 'none'}>
-
-      {/* Transparent tap-to-close area — no dimming */}
       {open && (
         <Pressable style={StyleSheet.absoluteFill} onPress={closeDrawer} />
       )}
@@ -95,6 +96,16 @@ export function DrawerOverlay({ navRef }: Props) {
             </Text>
           </TouchableOpacity>
         ))}
+
+        {user && (
+          <>
+            <View style={styles.divider} />
+            <TouchableOpacity style={styles.menuItem} onPress={handleLogout} activeOpacity={0.7}>
+              <Ionicons name="log-out-outline" size={20} color="rgba(255,255,255,0.5)" />
+              <Text style={styles.menuLabelMuted}>Hivoaka</Text>
+            </TouchableOpacity>
+          </>
+        )}
       </Animated.View>
     </View>
   );
@@ -124,4 +135,5 @@ const styles = StyleSheet.create({
   menuItem:        { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 14 },
   menuLabel:       { fontSize: 15, fontWeight: '500', color: 'rgba(255,255,255,0.82)' },
   menuLabelAccent: { color: COLORS.accent, fontWeight: '700' },
+  menuLabelMuted:  { fontSize: 15, fontWeight: '500', color: 'rgba(255,255,255,0.5)' },
 });
