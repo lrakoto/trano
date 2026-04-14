@@ -32,7 +32,7 @@ export function AppHeader() {
 
       <TouchableOpacity
         style={styles.iconButton}
-        onPress={() => navigation.navigate('Login')}
+        onPress={() => user ? openDrawer() : navigation.navigate('Login')}
         hitSlop={8}
       >
         {user ? (

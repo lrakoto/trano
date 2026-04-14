@@ -29,6 +29,7 @@ export function LoginScreen({ navigation }: Props) {
     setLoading(true);
     try {
       await login(phone, password);
+      navigation.goBack();
     } catch (e: any) {
       Alert.alert('Tsy voamarina', e.message);
     } finally {
