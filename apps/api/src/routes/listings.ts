@@ -108,6 +108,26 @@ export async function listingRoutes(app: FastifyInstance) {
     return reply.status(201).send(listing);
   });
 
+  // PATCH /listings/:id — edit (owner only)
+  app.patch('/:id', {
+    onRequest: [app.authenticate],
+    config:    { rateLimit: { max: 20, timeWindow: '1 hour' } },
+  }, async (request, reply) => {
+    const { id }   = request.params as { id: string };
+    const userId   = (request.user as any).sub as string;
+    const existing = await prisma.listing.findUnique({ where: { id } });
+    if (!existing)              return reply.status(404).send({ error: 'Not found' });
+    if (existing.ownerId !== userId) return reply.status(403).send({ error: 'Forbidden' });
+
+    const body    = createListingSchema.partial().parse(request.body);
+    const updated = await prisma.listing.update({
+      where:   { id },
+      data:    { ...body, ...(body.priceMga != null ? { priceMga: BigInt(body.priceMga) } : {}) },
+      include: { images: true },
+    });
+    return updated;
+  });
+
   // POST /listings/:id/report — flag a listing (auth required)
   app.post('/:id/report', {
     onRequest: [app.authenticate],

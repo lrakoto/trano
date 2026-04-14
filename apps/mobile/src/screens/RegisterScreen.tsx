@@ -6,6 +6,7 @@ import {
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAuth } from '../context/AuthContext';
 import { GlassButton } from '../components/GlassButton';
+import { KeyboardDismissBar } from '../components/KeyboardDismissBar';
 import { COLORS } from '../constants';
 import type { RootStackParamList } from '../navigation';
 
@@ -114,6 +115,7 @@ export function RegisterScreen({ navigation }: Props) {
           <Text style={styles.linkText}>Manana kaonty sahady? <Text style={styles.linkBold}>Miditra</Text></Text>
         </TouchableOpacity>
       </ScrollView>
+      <KeyboardDismissBar />
     </KeyboardAvoidingView>
   );
 }

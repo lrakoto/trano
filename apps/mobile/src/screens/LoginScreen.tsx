@@ -10,6 +10,7 @@ import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAuth } from '../context/AuthContext';
 import { GlassButton } from '../components/GlassButton';
+import { KeyboardDismissBar } from '../components/KeyboardDismissBar';
 import { COLORS } from '../constants';
 import type { RootStackParamList } from '../navigation';
 
@@ -84,6 +85,7 @@ export function LoginScreen({ navigation }: Props) {
           <Text style={styles.linkText}>Tsy manana kaonty? <Text style={styles.linkBold}>Mamorona</Text></Text>
         </TouchableOpacity>
       </View>
+      <KeyboardDismissBar />
     </KeyboardAvoidingView>
   );
 }

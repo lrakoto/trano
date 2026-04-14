@@ -1,16 +1,19 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View, Text, TextInput, ScrollView, TouchableOpacity,
   StyleSheet, Alert, KeyboardAvoidingView, Platform, ActivityIndicator,
 } from 'react-native';
 import * as Location from 'expo-location';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAuth } from '../context/AuthContext';
 import { GlassButton } from '../components/GlassButton';
 import { SatelliteThumb } from '../components/SatelliteThumb';
+import { KeyboardDismissBar } from '../components/KeyboardDismissBar';
 import { COLORS, API_BASE_URL } from '../constants';
 import { REGIONS } from '@trano/shared';
 import type { RegionValue, ListingType, PropertyType } from '@trano/shared';
+import type { RootStackParamList } from '../navigation';
 
 // TODO: image upload
 
@@ -44,16 +47,43 @@ const PROPERTY_TYPES: { value: PropertyType; label: string }[] = [
 ];
 
 export function PostListingScreen() {
-  const navigation      = useNavigation();
-  const { token }       = useAuth();
-  const [loading,       setLoading]       = useState(false);
-  const [locLoading,    setLocLoading]    = useState(false);
+  const navigation   = useNavigation();
+  const route        = useRoute<NativeStackScreenProps<RootStackParamList, 'PostListing'>['route']>();
+  const listingId    = (route.params as any)?.listingId as string | undefined;
+  const isEdit       = !!listingId;
+  const { token }    = useAuth();
+  const [loading,    setLoading]    = useState(false);
+  const [locLoading, setLocLoading] = useState(false);
   const [form, setForm] = useState<FormState>({
     title: '', description: '', priceMga: '', addressFreeform: '',
     city: '', region: 'ANALAMANGA', latitude: '', longitude: '',
     whatsappContact: '', listingType: 'SALE', propertyType: 'HOUSE',
     bedrooms: '', bathrooms: '', areaSqm: '',
   });
+
+  // Pre-fill form when editing
+  useEffect(() => {
+    if (!listingId) return;
+    fetch(`${API_BASE_URL}/listings/${listingId}`)
+      .then((r) => r.json())
+      .then((l) => setForm({
+        title:           l.title,
+        description:     l.description,
+        priceMga:        String(l.priceMga),
+        addressFreeform: l.addressFreeform,
+        city:            l.city,
+        region:          l.region,
+        latitude:        String(l.latitude),
+        longitude:       String(l.longitude),
+        whatsappContact: l.whatsappContact ?? '',
+        listingType:     l.listingType,
+        propertyType:    l.propertyType,
+        bedrooms:        l.bedrooms  != null ? String(l.bedrooms)  : '',
+        bathrooms:       l.bathrooms != null ? String(l.bathrooms) : '',
+        areaSqm:         l.areaSqm   != null ? String(l.areaSqm)   : '',
+      }))
+      .catch(() => Alert.alert('Diso', 'Tsy afaka naka ny lisitra'));
+  }, [listingId]);
 
   const set = (key: keyof FormState) => (value: string) =>
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -96,8 +126,10 @@ export function PostListingScreen() {
     }
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/listings`, {
-        method:  'POST',
+      const res = await fetch(
+        isEdit ? `${API_BASE_URL}/listings/${listingId}` : `${API_BASE_URL}/listings`,
+        {
+        method:  isEdit ? 'PATCH' : 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization:  `Bearer ${token}`,
@@ -123,7 +155,7 @@ export function PostListingScreen() {
         const err = await res.json();
         throw new Error(err.message ?? err.error ?? 'Tsy vita');
       }
-      Alert.alert('Vita!', 'Ny lisitrao dia narosona soa aman-tsara.', [
+      Alert.alert('Vita!', isEdit ? 'Voanova ny lisitra.' : 'Ny lisitrao dia narosona soa aman-tsara.', [
         { text: 'OK', onPress: () => navigation.goBack() },
       ]);
     } catch (e: any) {
@@ -139,6 +171,9 @@ export function PostListingScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        {isEdit && (
+          <Text style={styles.editBanner}>Hanova lisitra</Text>
+        )}
 
         <Field label="Lohateny *">
           <TextInput style={styles.input} value={form.title} onChangeText={set('title')}
@@ -282,13 +317,14 @@ export function PostListingScreen() {
         </Field>
 
         <GlassButton
-          label="Manampy lisitra"
+          label={isEdit ? 'Hanova' : 'Manampy lisitra'}
           onPress={handleSubmit}
           loading={loading}
           style={styles.button}
         />
 
       </ScrollView>
+      <KeyboardDismissBar />
     </KeyboardAvoidingView>
   );
 }
@@ -371,5 +407,6 @@ const styles = StyleSheet.create({
   coordRow:        { flexDirection: 'row', gap: 8, marginTop: 8 },
   coordInput:      { flex: 1, fontSize: 13, padding: 10 },
 
-  button: { marginTop: 32 },
+  button:     { marginTop: 32 },
+  editBanner: { fontSize: 13, fontWeight: '700', color: COLORS.accent, marginBottom: 4 },
 });

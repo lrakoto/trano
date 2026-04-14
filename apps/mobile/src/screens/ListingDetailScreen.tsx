@@ -122,15 +122,25 @@ export function ListingDetailScreen({ route, navigation }: Props) {
         </View>
       </ScrollView>
 
-      {/* Floating frosted glass pill button */}
-      {waPhone && (
-        <View style={[styles.bottomBar, { paddingBottom: Math.max(0, insets.bottom - 4) }]}>
+      {/* Floating action area */}
+      <View style={[styles.bottomBar, { paddingBottom: Math.max(0, insets.bottom - 4) }]}>
+        {user && (listing.owner as any).id === user.id && (
+          <TouchableOpacity
+            style={styles.editBtn}
+            onPress={() => navigation.navigate('PostListing', { listingId: listing.id })}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="pencil" size={15} color={COLORS.surface} />
+            <Text style={styles.editBtnText}>Hanova</Text>
+          </TouchableOpacity>
+        )}
+        {waPhone && (
           <GlassButton
             label="Mifandraisa amin'i WhatsApp"
             onPress={handleWhatsApp}
           />
-        </View>
-      )}
+        )}
+      </View>
     </View>
   );
 }
@@ -218,7 +228,6 @@ const styles = StyleSheet.create({
   ownerName:    { fontSize: 15, fontWeight: '700', color: COLORS.text },
   verified:     { fontSize: 12, color: COLORS.primaryLight, marginTop: 1 },
 
-  // Floating frosted glass pill
   bottomBar: {
     position:          'absolute',
     bottom:             0,
@@ -226,6 +235,16 @@ const styles = StyleSheet.create({
     right:              0,
     paddingHorizontal: 24,
     paddingTop:        12,
-    // transparent — content scrolls through underneath
+    gap:                8,
   },
+  editBtn: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    justifyContent:    'center',
+    gap:                6,
+    backgroundColor:   COLORS.primaryMid,
+    borderRadius:      14,
+    paddingVertical:   12,
+  },
+  editBtnText: { color: COLORS.surface, fontWeight: '700', fontSize: 15 },
 });

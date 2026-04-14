@@ -21,7 +21,7 @@ import { COLORS } from '../constants';
 export type RootStackParamList = {
   Tabs:          undefined;
   ListingDetail: { listingId: string };
-  PostListing:   undefined;
+  PostListing:   { listingId?: string } | undefined;
   MyListings:    undefined;
   Login:         undefined;
   Register:      undefined;
