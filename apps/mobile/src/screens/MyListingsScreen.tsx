@@ -30,8 +30,7 @@ export function MyListingsScreen() {
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading,  setLoading]  = useState(true);
 
-  // Reload every time screen comes into focus (e.g. after posting a new listing)
-  useFocusEffect(useCallback(() => {
+  const loadListings = () => {
     if (!user) return;
     setLoading(true);
     fetch(`${API_BASE_URL}/users/${user.id}/listings`, {
@@ -41,7 +40,33 @@ export function MyListingsScreen() {
       .then(setListings)
       .catch(() => Alert.alert('Diso', 'Tsy afaka naka ny lisitra'))
       .finally(() => setLoading(false));
-  }, [user?.id]));
+  };
+
+  useFocusEffect(useCallback(loadListings, [user?.id]));
+
+  const handleDelete = (listing: Listing) => {
+    Alert.alert(
+      'Hamafa?',
+      `"${listing.title}" — tsy azo averina izany.`,
+      [
+        { text: 'Hanafoana', style: 'cancel' },
+        {
+          text: 'Hamafa', style: 'destructive',
+          onPress: async () => {
+            try {
+              await fetch(`${API_BASE_URL}/listings/${listing.id}`, {
+                method:  'DELETE',
+                headers: { Authorization: `Bearer ${token}` },
+              });
+              setListings((prev) => prev.filter((l) => l.id !== listing.id));
+            } catch {
+              Alert.alert('Diso', 'Tsy afaka namafa');
+            }
+          },
+        },
+      ],
+    );
+  };
 
   if (!user) {
     return (
@@ -103,6 +128,7 @@ export function MyListingsScreen() {
             <MyListingCard
               listing={item}
               onPress={() => navigation.navigate('ListingDetail', { listingId: item.id })}
+              onDelete={() => handleDelete(item)}
             />
           )}
         />
@@ -111,7 +137,7 @@ export function MyListingsScreen() {
   );
 }
 
-function MyListingCard({ listing, onPress }: { listing: Listing; onPress: () => void }) {
+function MyListingCard({ listing, onPress, onDelete }: { listing: Listing; onPress: () => void; onDelete: () => void }) {
   const status = STATUS_LABEL[listing.status] ?? STATUS_LABEL.ACTIVE;
   return (
     <TouchableOpacity style={card.outer} onPress={onPress} activeOpacity={0.8}>
@@ -150,7 +176,9 @@ function MyListingCard({ listing, onPress }: { listing: Listing; onPress: () => 
           </View>
         </View>
 
-        <Ionicons name="chevron-forward" size={16} color={COLORS.textMuted} style={card.chevron} />
+        <TouchableOpacity onPress={onDelete} hitSlop={8} style={card.deleteBtn}>
+          <Ionicons name="trash-outline" size={18} color={COLORS.danger} />
+        </TouchableOpacity>
       </LinearGradient>
     </TouchableOpacity>
   );
@@ -214,5 +242,5 @@ const card = StyleSheet.create({
   location:     { fontSize: 11, color: COLORS.textMuted },
   statusBadge:  { alignSelf: 'flex-start', marginTop: 4, paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6 },
   statusText:   { fontSize: 11, fontWeight: '700' },
-  chevron:      { paddingRight: 12 },
+  deleteBtn:    { paddingRight: 14, paddingLeft: 6 },
 });

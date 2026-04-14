@@ -128,6 +128,20 @@ export async function listingRoutes(app: FastifyInstance) {
     return updated;
   });
 
+  // DELETE /listings/:id — remove (owner only)
+  app.delete('/:id', {
+    onRequest: [app.authenticate],
+    config:    { rateLimit: { max: 10, timeWindow: '1 hour' } },
+  }, async (request, reply) => {
+    const { id }   = request.params as { id: string };
+    const userId   = (request.user as any).sub as string;
+    const existing = await prisma.listing.findUnique({ where: { id } });
+    if (!existing)                   return reply.status(404).send({ error: 'Not found' });
+    if (existing.ownerId !== userId) return reply.status(403).send({ error: 'Forbidden' });
+    await prisma.listing.delete({ where: { id } });
+    return reply.status(204).send();
+  });
+
   // POST /listings/:id/report — flag a listing (auth required)
   app.post('/:id/report', {
     onRequest: [app.authenticate],

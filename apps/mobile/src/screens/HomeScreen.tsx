@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
-  ActivityIndicator, TextInput, Dimensions, Keyboard, Platform,
+  ActivityIndicator, TextInput, Dimensions, Keyboard, Platform, RefreshControl,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -40,11 +40,13 @@ export function HomeScreen() {
   const [listings,     setListings]     = useState<Listing[]>([]);
   const [filtered,     setFiltered]     = useState<Listing[]>([]);
   const [loading,      setLoading]      = useState(true);
+  const [refreshing,   setRefreshing]   = useState(false);
   const [search,       setSearch]       = useState(cityFilter ?? '');
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [kbHeight,     setKbHeight]     = useState(0);
 
-  useEffect(() => {
+  const fetchListings = (isRefresh = false) => {
+    if (isRefresh) setRefreshing(true); else setLoading(true);
     fetch(`${API_BASE_URL}/listings`)
       .then((r) => r.json())
       .then((res) => {
@@ -52,8 +54,10 @@ export function HomeScreen() {
         setListings(data);
         setFiltered(data);
       })
-      .finally(() => setLoading(false));
-  }, []);
+      .finally(() => { setLoading(false); setRefreshing(false); });
+  };
+
+  useEffect(() => { fetchListings(); }, []);
 
   useEffect(() => {
     (async () => {
@@ -144,6 +148,13 @@ export function HomeScreen() {
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.list}
             showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={() => fetchListings(true)}
+                tintColor={COLORS.primary}
+              />
+            }
             renderItem={({ item }) => (
               <ListingCard
                 listing={item}
