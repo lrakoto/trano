@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
 import {
   View, Text, TextInput, ScrollView, TouchableOpacity,
-  StyleSheet, Alert, KeyboardAvoidingView, Platform,
+  StyleSheet, Alert, KeyboardAvoidingView, Platform, ActivityIndicator,
 } from 'react-native';
+import * as Location from 'expo-location';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { GlassButton } from '../components/GlassButton';
+import { SatelliteThumb } from '../components/SatelliteThumb';
 import { COLORS, API_BASE_URL } from '../constants';
 import { REGIONS } from '@trano/shared';
 import type { RegionValue, ListingType, PropertyType } from '@trano/shared';
 
-// TODO: image upload, map pin picker
+// TODO: image upload
 
 type FormState = {
   title:           string;
@@ -29,7 +31,7 @@ type FormState = {
   areaSqm:         string;
 };
 
-const LISTING_TYPES: { value: ListingType; label: string }[] = [
+const LISTING_TYPES:  { value: ListingType;  label: string }[] = [
   { value: 'RENT', label: 'Hofana' },
   { value: 'SALE', label: 'Amidy' },
 ];
@@ -42,9 +44,10 @@ const PROPERTY_TYPES: { value: PropertyType; label: string }[] = [
 ];
 
 export function PostListingScreen() {
-  const navigation = useNavigation();
-  const { token }  = useAuth();
-  const [loading,  setLoading]  = useState(false);
+  const navigation      = useNavigation();
+  const { token }       = useAuth();
+  const [loading,       setLoading]       = useState(false);
+  const [locLoading,    setLocLoading]    = useState(false);
   const [form, setForm] = useState<FormState>({
     title: '', description: '', priceMga: '', addressFreeform: '',
     city: '', region: 'ANALAMANGA', latitude: '', longitude: '',
@@ -55,22 +58,45 @@ export function PostListingScreen() {
   const set = (key: keyof FormState) => (value: string) =>
     setForm((prev) => ({ ...prev, [key]: value }));
 
+  const hasCoords = form.latitude !== '' && form.longitude !== '';
+
+  const handleUseLocation = async () => {
+    setLocLoading(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Tsy azo', 'Ilaina ny alalana hahita ny toeranao');
+        return;
+      }
+      const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+      setForm((prev) => ({
+        ...prev,
+        latitude:  loc.coords.latitude.toFixed(6),
+        longitude: loc.coords.longitude.toFixed(6),
+      }));
+    } catch {
+      Alert.alert('Diso', 'Tsy afaka mahita ny toerana');
+    } finally {
+      setLocLoading(false);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!form.title || !form.description || !form.priceMga || !form.addressFreeform || !form.city) {
       Alert.alert('Diso', 'Fenoy ny saha voaisy *');
       return;
     }
-    if (!form.latitude || !form.longitude) {
-      Alert.alert('Diso', 'Ilaina ny toerana (latitude sy longitude)');
+    if (!hasCoords) {
+      Alert.alert('Diso', 'Ilaina ny toerana — tsindrio "Ampiasao ny toerana ankehitriny"');
       return;
     }
     setLoading(true);
     try {
       const res = await fetch(`${API_BASE_URL}/listings`, {
-        method: 'POST',
+        method:  'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          Authorization:  `Bearer ${token}`,
         },
         body: JSON.stringify({
           title:           form.title,
@@ -170,22 +196,58 @@ export function PostListingScreen() {
           </ScrollView>
         </Field>
 
-        <View style={styles.row}>
-          <View style={{ flex: 1 }}>
-            <Field label="Latitude *">
-              <TextInput style={styles.input} value={form.latitude} onChangeText={set('latitude')}
-                keyboardType="decimal-pad" placeholder="-18.9137" />
-            </Field>
-          </View>
-          <View style={{ width: 12 }} />
-          <View style={{ flex: 1 }}>
-            <Field label="Longitude *">
-              <TextInput style={styles.input} value={form.longitude} onChangeText={set('longitude')}
-                keyboardType="decimal-pad" placeholder="47.5361" />
-            </Field>
-          </View>
-        </View>
+        {/* ── Location ───────────────────────────────────────────────── */}
+        <Field label="Toerana *">
+          <TouchableOpacity
+            style={[styles.locationBtn, hasCoords && styles.locationBtnDone]}
+            onPress={handleUseLocation}
+            activeOpacity={0.8}
+            disabled={locLoading}
+          >
+            {locLoading ? (
+              <ActivityIndicator size="small" color={COLORS.surface} />
+            ) : (
+              <Text style={styles.locationBtnText}>
+                {hasCoords ? '✓ Toerana voafaritra' : '📍 Ampiasao ny toerana ankehitriny'}
+              </Text>
+            )}
+          </TouchableOpacity>
 
+          {/* Satellite preview once coords are set */}
+          {hasCoords && (
+            <View style={styles.mapPreview}>
+              <SatelliteThumb
+                latitude={parseFloat(form.latitude)}
+                longitude={parseFloat(form.longitude)}
+                width={styles.mapPreview.width as number}
+                height={120}
+                delta={0.003}
+              />
+            </View>
+          )}
+
+          {/* Manual override — collapsed by default */}
+          <View style={styles.coordRow}>
+            <TextInput
+              style={[styles.input, styles.coordInput]}
+              value={form.latitude}
+              onChangeText={set('latitude')}
+              keyboardType="decimal-pad"
+              placeholder="Latitude"
+              placeholderTextColor={COLORS.textMuted}
+            />
+            <TextInput
+              style={[styles.input, styles.coordInput]}
+              value={form.longitude}
+              onChangeText={set('longitude')}
+              keyboardType="decimal-pad"
+              placeholder="Longitude"
+              placeholderTextColor={COLORS.textMuted}
+            />
+          </View>
+        </Field>
+
+        {/* ── Optional stats ─────────────────────────────────────────── */}
         <View style={styles.row}>
           <View style={{ flex: 1 }}>
             <Field label="Efitrano">
@@ -227,7 +289,7 @@ export function PostListingScreen() {
   );
 }
 
-// ─── Small helpers ────────────────────────────────────────────────────────────
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -241,8 +303,8 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 function SegmentedControl({
   options, value, onChange,
 }: {
-  options: { value: string; label: string }[];
-  value:   string;
+  options:  { value: string; label: string }[];
+  value:    string;
   onChange: (v: string) => void;
 }) {
   return (
@@ -268,7 +330,7 @@ const segStyles = StyleSheet.create({
   row:          { flexDirection: 'row', gap: 8 },
   option: {
     flex: 1, padding: 10, borderRadius: 8, borderWidth: 1.5,
-    borderColor: COLORS.border, alignItems: 'center', backgroundColor: COLORS.white,
+    borderColor: COLORS.border, alignItems: 'center', backgroundColor: COLORS.surface,
   },
   optionActive: { borderColor: COLORS.primary, backgroundColor: COLORS.primary + '0D' },
   text:         { fontSize: 14, color: COLORS.textMuted, fontWeight: '600' },
@@ -276,21 +338,34 @@ const segStyles = StyleSheet.create({
 });
 
 const styles = StyleSheet.create({
-  container:  { flex: 1, backgroundColor: COLORS.background },
-  content:    { padding: 20, paddingBottom: 48 },
-  row:        { flexDirection: 'row' },
+  container: { flex: 1, backgroundColor: COLORS.background },
+  content:   { padding: 20, paddingBottom: 48 },
+  row:       { flexDirection: 'row' },
   input: {
-    backgroundColor: COLORS.white, borderWidth: 1, borderColor: COLORS.border,
+    backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border,
     borderRadius: 8, padding: 12, fontSize: 15, color: COLORS.text,
   },
-  multiline:  { minHeight: 100, textAlignVertical: 'top' },
-  chipRow:    { flexDirection: 'row', gap: 8, paddingVertical: 4 },
+  multiline: { minHeight: 100, textAlignVertical: 'top' },
+  chipRow:   { flexDirection: 'row', gap: 8, paddingVertical: 4 },
   chip: {
     paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20,
-    borderWidth: 1.5, borderColor: COLORS.border, backgroundColor: COLORS.white,
+    borderWidth: 1.5, borderColor: COLORS.border, backgroundColor: COLORS.surface,
   },
   chipActive:     { borderColor: COLORS.primary, backgroundColor: COLORS.primary + '0D' },
   chipText:       { fontSize: 13, color: COLORS.textMuted },
   chipTextActive: { color: COLORS.primary, fontWeight: '600' },
+
+  locationBtn: {
+    backgroundColor:   COLORS.primary,
+    borderRadius:       10,
+    padding:            14,
+    alignItems:        'center',
+  },
+  locationBtnDone: { backgroundColor: COLORS.primaryLight },
+  locationBtnText: { color: COLORS.surface, fontWeight: '700', fontSize: 15 },
+  mapPreview:      { marginTop: 10, borderRadius: 10, overflow: 'hidden', width: '100%' },
+  coordRow:        { flexDirection: 'row', gap: 8, marginTop: 8 },
+  coordInput:      { flex: 1, fontSize: 13, padding: 10 },
+
   button: { marginTop: 32 },
 });
