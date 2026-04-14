@@ -9,6 +9,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppHeader } from '../components/AppHeader';
 import { SatelliteThumb } from '../components/SatelliteThumb';
 import { useSaved } from '../context/SavedContext';
+import { useAuth } from '../context/AuthContext';
 import { COLORS } from '../constants';
 import type { RootStackParamList } from '../navigation';
 import type { Listing } from '@trano/shared';
@@ -18,8 +19,28 @@ type Nav = NativeStackNavigationProp<RootStackParamList>;
 const IMAGE_SIZE = 88;
 
 export function SavedScreen() {
-  const navigation    = useNavigation<Nav>();
+  const navigation        = useNavigation<Nav>();
+  const { user }          = useAuth();
   const { saved, toggle } = useSaved();
+
+  if (!user) {
+    return (
+      <View style={styles.container}>
+        <AppHeader />
+        <View style={styles.empty}>
+          <Ionicons name="lock-closed-outline" size={52} color={COLORS.border} />
+          <Text style={styles.emptyTitle}>Midira aloha</Text>
+          <Text style={styles.emptySub}>Mila kaonty ianao mba hitahiry trano.</Text>
+          <TouchableOpacity
+            style={styles.loginBtn}
+            onPress={() => navigation.navigate('Login')}
+          >
+            <Text style={styles.loginBtnText}>Miditra</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
   if (saved.length === 0) {
     return (
@@ -112,9 +133,11 @@ const styles = StyleSheet.create({
   container:  { flex: 1, backgroundColor: COLORS.background },
   heading:    { fontSize: 22, fontWeight: '800', color: COLORS.text, margin: 20, marginBottom: 12 },
   list:       { paddingHorizontal: 16, paddingBottom: 32 },
-  empty:      { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 12 },
-  emptyTitle: { fontSize: 20, fontWeight: '700', color: COLORS.text },
-  emptySub:   { fontSize: 14, color: COLORS.textMuted, textAlign: 'center', lineHeight: 22 },
+  empty:        { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 12 },
+  emptyTitle:   { fontSize: 20, fontWeight: '700', color: COLORS.text },
+  emptySub:     { fontSize: 14, color: COLORS.textMuted, textAlign: 'center', lineHeight: 22 },
+  loginBtn:     { marginTop: 8, backgroundColor: COLORS.primary, paddingHorizontal: 32, paddingVertical: 14, borderRadius: 12 },
+  loginBtnText: { color: COLORS.surface, fontSize: 15, fontWeight: '700' },
 });
 
 const card = StyleSheet.create({
