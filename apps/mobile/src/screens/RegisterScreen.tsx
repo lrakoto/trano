@@ -39,6 +39,7 @@ export function RegisterScreen({ navigation }: Props) {
     setLoading(true);
     try {
       await register({ name, phone, password, role });
+      navigation.goBack();
     } catch (e: any) {
       Alert.alert('Tsy vita', e.message);
     } finally {
@@ -124,13 +125,13 @@ const styles = StyleSheet.create({
   subtitle:        { fontSize: 15, color: COLORS.textMuted, textAlign: 'center', marginBottom: 28 },
   label:           { fontSize: 14, fontWeight: '600', color: COLORS.text, marginBottom: 6, marginTop: 16 },
   input: {
-    backgroundColor: COLORS.white, borderWidth: 1, borderColor: COLORS.border,
+    backgroundColor: COLORS.surface, borderWidth: 1, borderColor: COLORS.border,
     borderRadius: 8, padding: 14, fontSize: 15, color: COLORS.text,
   },
   roleRow:         { flexDirection: 'column', gap: 8, marginTop: 4 },
   roleCard: {
     padding: 14, borderRadius: 10, borderWidth: 1.5,
-    borderColor: COLORS.border, backgroundColor: COLORS.white,
+    borderColor: COLORS.border, backgroundColor: COLORS.surface,
   },
   roleCardActive:  { borderColor: COLORS.primary, backgroundColor: COLORS.primary + '0D' },
   roleLabel:       { fontSize: 14, fontWeight: '700', color: COLORS.text },
