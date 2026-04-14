@@ -1,17 +1,4 @@
-import Constants from 'expo-constants';
-
-// On a physical device, localhost points to the phone — resolve the Mac's
-// LAN IP from whichever Expo manifest field is available in this SDK version.
-const devHost: string =
-  (Constants as any).expoGoConfig?.debuggerHost?.split(':')[0] ??
-  Constants.expoConfig?.hostUri?.split(':')[0] ??
-  (Constants as any).manifest?.debuggerHost?.split(':')[0] ??
-  (Constants as any).manifest2?.extra?.expoGo?.debuggerHost?.split(':')[0] ??
-  'localhost';
-
-export const API_BASE_URL = __DEV__
-  ? `http://${devHost}:3000`
-  : 'https://api.trano.app';
+export const API_BASE_URL = 'https://api.trano.app';
 
 // Pre-filled WhatsApp message in Malagasy
 export const WHATSAPP_PREFILL = (listingTitle: string) =>
