@@ -8,8 +8,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapView, { Marker, Callout } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { TabParamList } from '../navigation';
 import type { Listing } from '@trano/shared';
 import { AppHeader } from '../components/AppHeader';
 import { SatelliteThumb } from '../components/SatelliteThumb';
@@ -29,14 +30,17 @@ const ANTANANARIVO = {
 
 export function HomeScreen() {
   const navigation = useNavigation<Nav>();
+  const route      = useRoute<RouteProp<TabParamList, 'Home'>>();
   const insets     = useSafeAreaInsets();
   const mapRef     = useRef<MapView>(null);
   const TAB_BAR_H  = 38 + insets.bottom;
 
+  const cityFilter = (route.params as any)?.cityFilter as string | undefined;
+
   const [listings,     setListings]     = useState<Listing[]>([]);
   const [filtered,     setFiltered]     = useState<Listing[]>([]);
   const [loading,      setLoading]      = useState(true);
-  const [search,       setSearch]       = useState('');
+  const [search,       setSearch]       = useState(cityFilter ?? '');
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [kbHeight,     setKbHeight]     = useState(0);
 
@@ -77,6 +81,10 @@ export function HomeScreen() {
     );
     return () => { show.remove(); hide.remove(); };
   }, []);
+
+  useEffect(() => {
+    if (cityFilter) setSearch(cityFilter);
+  }, [cityFilter]);
 
   useEffect(() => {
     const q = search.trim().toLowerCase();

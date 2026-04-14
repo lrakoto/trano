@@ -4,12 +4,12 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { AppHeader } from '../components/AppHeader';
 import { COLORS } from '../constants';
-import type { RootStackParamList } from '../navigation';
+import type { TabParamList } from '../navigation';
 
-type Nav = NativeStackNavigationProp<RootStackParamList>;
+type Nav = BottomTabNavigationProp<TabParamList, 'Cities'>;
 
 // Top cities in Madagascar by real estate activity
 const CITIES = [
@@ -40,9 +40,7 @@ export function CitiesScreen() {
           <TouchableOpacity
             style={styles.card}
             activeOpacity={0.75}
-            onPress={() => {
-              // TODO: navigate to HomeScreen filtered by this city
-            }}
+            onPress={() => navigation.navigate('Home', { cityFilter: item.name })}
           >
             <Text style={styles.emoji}>{item.emoji}</Text>
             <View style={styles.info}>

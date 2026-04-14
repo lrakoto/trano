@@ -26,7 +26,7 @@ export type RootStackParamList = {
 };
 
 export type TabParamList = {
-  Home:   undefined;
+  Home:   { cityFilter?: string } | undefined;
   Saved:  undefined;
   Cities: undefined;
   Inbox:  undefined;

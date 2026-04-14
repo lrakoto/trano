@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import {
-  View, Text, TouchableOpacity, StyleSheet,
+  View, Text, TouchableOpacity, StyleSheet, Alert,
   Animated, Pressable, Dimensions, StatusBar, Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,6 +9,8 @@ import { useAuth } from '../context/AuthContext';
 import { COLORS } from '../constants';
 import type { NavigationContainerRef } from '@react-navigation/native';
 import type { RootStackParamList } from '../navigation';
+
+const APP_VERSION = '0.1.0';
 
 interface Props {
   navRef: NavigationContainerRef<RootStackParamList>;
@@ -19,7 +21,7 @@ const DRAWER_W   = SCREEN_W * 0.72;
 const STATUS_BAR = Platform.OS === 'ios' ? 44 : StatusBar.currentHeight ?? 0;
 
 type IoniconsName = React.ComponentProps<typeof Ionicons>['name'];
-type MenuItem = { icon: IoniconsName; label: string; screen?: keyof RootStackParamList; accent?: boolean };
+type MenuItem = { icon: IoniconsName; label: string; onPress: () => void; accent?: boolean };
 
 export function DrawerOverlay({ navRef }: Props) {
   const { open, closeDrawer } = useDrawer();
@@ -44,9 +46,14 @@ export function DrawerOverlay({ navRef }: Props) {
     }
   }, [open]);
 
-  const go = (screen?: keyof RootStackParamList) => {
+  const go = (screen: keyof RootStackParamList) => {
     closeDrawer();
-    if (screen) setTimeout(() => navRef.navigate(screen as any), 210);
+    setTimeout(() => navRef.navigate(screen as any), 210);
+  };
+
+  const goTab = (tab: string) => {
+    closeDrawer();
+    setTimeout(() => navRef.navigate('Tabs' as any, { screen: tab } as any), 210);
   };
 
   const handleLogout = () => {
@@ -54,11 +61,20 @@ export function DrawerOverlay({ navRef }: Props) {
     logout();
   };
 
+  const handleAbout = () => {
+    closeDrawer();
+    setTimeout(() => Alert.alert(
+      'Momba ny Trano',
+      `Trano dia fampiharana fitadiavana trano any Madagasikara.\n\nVersion ${APP_VERSION}\ntrano.app`,
+      [{ text: 'OK' }],
+    ), 210);
+  };
+
   const menuItems: MenuItem[] = [
-    { icon: 'add-circle-outline',         label: 'Hanampy lisitra', screen: user ? 'PostListing' : 'Login', accent: true },
-    { icon: 'heart-outline',              label: 'Ny lisitra voatahiry' },
-    { icon: 'information-circle-outline', label: 'Momba ny Trano' },
-    ...(!user ? [{ icon: 'log-in-outline' as IoniconsName, label: 'Hiditra', screen: 'Login' as keyof RootStackParamList }] : []),
+    { icon: 'add-circle-outline',         label: 'Hanampy lisitra',      onPress: () => go(user ? 'PostListing' : 'Login'), accent: true },
+    { icon: 'heart-outline',              label: 'Ny lisitra voatahiry',  onPress: () => goTab('Saved') },
+    { icon: 'information-circle-outline', label: 'Momba ny Trano',        onPress: handleAbout },
+    ...(!user ? [{ icon: 'log-in-outline' as IoniconsName, label: 'Hiditra', onPress: () => go('Login') }] : []),
   ];
 
   return (
@@ -83,7 +99,7 @@ export function DrawerOverlay({ navRef }: Props) {
           <TouchableOpacity
             key={item.label}
             style={styles.menuItem}
-            onPress={() => go(item.screen)}
+            onPress={item.onPress}
             activeOpacity={0.7}
           >
             <Ionicons

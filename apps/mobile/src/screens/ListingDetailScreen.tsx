@@ -10,6 +10,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { Listing } from '@trano/shared';
 import { SatelliteThumb } from '../components/SatelliteThumb';
 import { useAuth } from '../context/AuthContext';
+import { useSaved } from '../hooks/useSaved';
 import { API_BASE_URL, COLORS, WHATSAPP_PREFILL } from '../constants';
 import type { RootStackParamList } from '../navigation';
 
@@ -19,11 +20,11 @@ const SCREEN_WIDTH = Dimensions.get('window').width;
 
 export function ListingDetailScreen({ route, navigation }: Props) {
   const { listingId } = route.params;
-  const { user } = useAuth();
-  const insets = useSafeAreaInsets();
-  const [listing, setListing]   = useState<Listing | null>(null);
-  const [loading, setLoading]   = useState(true);
-  const [isSaved, setIsSaved]   = useState(false);
+  const { user }              = useAuth();
+  const { toggle, isSaved }   = useSaved();
+  const insets                = useSafeAreaInsets();
+  const [listing, setListing] = useState<Listing | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch(`${API_BASE_URL}/listings/${listingId}`)
@@ -44,11 +45,8 @@ export function ListingDetailScreen({ route, navigation }: Props) {
   };
 
   const handleFavorite = () => {
-    if (!user) {
-      navigation.navigate('Login');
-      return;
-    }
-    setIsSaved((prev) => !prev);
+    if (!user) { navigation.navigate('Login'); return; }
+    if (listing) toggle(listing);
   };
 
   return (
@@ -77,9 +75,9 @@ export function ListingDetailScreen({ route, navigation }: Props) {
             </View>
             <TouchableOpacity style={styles.heartButton} onPress={handleFavorite} activeOpacity={0.8}>
               <Ionicons
-                name={isSaved ? 'heart' : 'heart-outline'}
+                name={listing && isSaved(listing.id) ? 'heart' : 'heart-outline'}
                 size={20}
-                color={isSaved ? '#FF4D6D' : '#fff'}
+                color={listing && isSaved(listing.id) ? '#FF4D6D' : '#fff'}
               />
             </TouchableOpacity>
           </View>
