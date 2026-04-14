@@ -86,6 +86,10 @@ export function PostListingScreen() {
       Alert.alert('Diso', 'Fenoy ny saha voaisy *');
       return;
     }
+    if (form.description.length < 20) {
+      Alert.alert('Diso', 'Ny famaritana dia tokony ho litera 20 farafahakeliny');
+      return;
+    }
     if (!hasCoords) {
       Alert.alert('Diso', 'Ilaina ny toerana — tsindrio "Ampiasao ny toerana ankehitriny"');
       return;

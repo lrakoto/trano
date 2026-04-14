@@ -2,6 +2,7 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import jwt from '@fastify/jwt';
 import rateLimit from '@fastify/rate-limit';
+import { ZodError } from 'zod';
 import { authRoutes } from './routes/auth';
 import { listingRoutes } from './routes/listings';
 import { userRoutes } from './routes/users';
@@ -39,6 +40,19 @@ export function buildApp() {
     } catch {
       reply.status(401).send({ error: 'Unauthorized' });
     }
+  });
+
+  // ── Zod validation errors → 400 ──────────────────────────────────────────
+  app.setErrorHandler((err, _req, reply) => {
+    if (err instanceof ZodError) {
+      const first = err.issues[0];
+      return reply.status(400).send({
+        error:   'Validation error',
+        message: first ? `${first.path.join('.')}: ${first.message}` : 'Invalid input',
+      });
+    }
+    app.log.error(err);
+    reply.status(err.statusCode ?? 500).send({ error: err.message ?? 'Internal server error' });
   });
 
   app.register(authRoutes,    { prefix: '/auth' });
