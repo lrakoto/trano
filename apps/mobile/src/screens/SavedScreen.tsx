@@ -8,7 +8,7 @@ import { useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppHeader } from '../components/AppHeader';
 import { SatelliteThumb } from '../components/SatelliteThumb';
-import { useSaved } from '../hooks/useSaved';
+import { useSaved } from '../context/SavedContext';
 import { COLORS } from '../constants';
 import type { RootStackParamList } from '../navigation';
 import type { Listing } from '@trano/shared';

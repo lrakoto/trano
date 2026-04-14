@@ -10,7 +10,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { Listing } from '@trano/shared';
 import { SatelliteThumb } from '../components/SatelliteThumb';
 import { useAuth } from '../context/AuthContext';
-import { useSaved } from '../hooks/useSaved';
+import { useSaved } from '../context/SavedContext';
 import { API_BASE_URL, COLORS, WHATSAPP_PREFILL } from '../constants';
 import type { RootStackParamList } from '../navigation';
 

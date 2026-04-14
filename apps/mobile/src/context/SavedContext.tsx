@@ -1,10 +1,18 @@
-import { useEffect, useState, useCallback } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Listing } from '@trano/shared';
 
 const STORAGE_KEY = 'trano_saved_listings';
 
-export function useSaved() {
+interface SavedContext {
+  saved:   Listing[];
+  toggle:  (listing: Listing) => void;
+  isSaved: (id: string) => boolean;
+}
+
+const SavedContext = createContext<SavedContext | null>(null);
+
+export function SavedProvider({ children }: { children: React.ReactNode }) {
   const [saved, setSaved] = useState<Listing[]>([]);
 
   useEffect(() => {
@@ -24,5 +32,15 @@ export function useSaved() {
 
   const isSaved = useCallback((id: string) => saved.some((l) => l.id === id), [saved]);
 
-  return { saved, toggle, isSaved };
+  return (
+    <SavedContext.Provider value={{ saved, toggle, isSaved }}>
+      {children}
+    </SavedContext.Provider>
+  );
+}
+
+export function useSaved() {
+  const ctx = useContext(SavedContext);
+  if (!ctx) throw new Error('useSaved must be used within SavedProvider');
+  return ctx;
 }
