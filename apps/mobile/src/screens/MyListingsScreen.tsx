@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../context/AuthContext';
+import { GlassButton } from '../components/GlassButton';
 import { SatelliteThumb } from '../components/SatelliteThumb';
 import { API_BASE_URL, COLORS } from '../constants';
 import type { RootStackParamList } from '../navigation';
@@ -41,6 +42,26 @@ export function MyListingsScreen() {
       .catch(() => Alert.alert('Diso', 'Tsy afaka naka ny lisitra'))
       .finally(() => setLoading(false));
   }, [user?.id]));
+
+  if (!user) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={8}>
+            <Ionicons name="chevron-back" size={26} color={COLORS.primary} />
+          </TouchableOpacity>
+          <Text style={styles.heading}>Ny lisitray</Text>
+          <View style={{ width: 28 }} />
+        </View>
+        <View style={styles.empty}>
+          <Ionicons name="lock-closed-outline" size={52} color={COLORS.border} />
+          <Text style={styles.emptyTitle}>Midira aloha</Text>
+          <Text style={styles.emptySub}>Mila kaonty ianao mba hijery ny lisitrao.</Text>
+          <GlassButton label="Miditra" onPress={() => navigation.navigate('Login')} style={{ marginTop: 8 }} />
+        </View>
+      </View>
+    );
+  }
 
   if (loading) {
     return (

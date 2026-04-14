@@ -75,9 +75,9 @@ export function ListingDetailScreen({ route, navigation }: Props) {
             </View>
             <TouchableOpacity style={styles.heartButton} onPress={handleFavorite} activeOpacity={0.8}>
               <Ionicons
-                name={listing && isSaved(listing.id) ? 'heart' : 'heart-outline'}
+                name={listing && user && isSaved(listing.id) ? 'heart' : 'heart-outline'}
                 size={20}
-                color={listing && isSaved(listing.id) ? '#FF4D6D' : '#fff'}
+                color={listing && user && isSaved(listing.id) ? '#FF4D6D' : '#fff'}
               />
             </TouchableOpacity>
           </View>
