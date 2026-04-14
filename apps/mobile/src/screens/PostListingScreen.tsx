@@ -121,7 +121,7 @@ export function PostListingScreen() {
       });
       if (!res.ok) {
         const err = await res.json();
-        throw new Error(err.error ?? 'Tsy vita');
+        throw new Error(err.message ?? err.error ?? 'Tsy vita');
       }
       Alert.alert('Vita!', 'Ny lisitrao dia narosona soa aman-tsara.', [
         { text: 'OK', onPress: () => navigation.goBack() },
