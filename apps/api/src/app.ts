@@ -4,12 +4,10 @@ import jwt from '@fastify/jwt';
 import multipart from '@fastify/multipart';
 import rateLimit from '@fastify/rate-limit';
 import { ZodError } from 'zod';
-import fs from 'fs';
-import path from 'path';
 import { authRoutes } from './routes/auth';
 import { listingRoutes } from './routes/listings';
 import { userRoutes } from './routes/users';
-import { imageRoutes, UPLOAD_DIR } from './routes/images';
+import { imageRoutes } from './routes/images';
 
 export function buildApp() {
   const app = Fastify({ logger: true });
@@ -68,17 +66,6 @@ export function buildApp() {
   app.register(imageRoutes,   { prefix: '/listings' });
 
   app.get('/health', async () => ({ status: 'ok' }));
-
-  // ── Serve uploaded images ─────────────────────────────────────────────────
-  app.get('/uploads/:filename', async (request, reply) => {
-    const { filename } = request.params as { filename: string };
-    const safe         = path.basename(filename);          // prevent path traversal
-    const filePath     = path.join(UPLOAD_DIR, safe);
-    if (!fs.existsSync(filePath)) return reply.status(404).send({ error: 'Not found' });
-    const ext         = path.extname(safe).toLowerCase();
-    const contentType = ({ '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp' } as Record<string, string>)[ext] ?? 'application/octet-stream';
-    return reply.type(contentType).send(fs.createReadStream(filePath));
-  });
 
   app.get('/privacy', async (_req, reply) => {
     reply.type('text/html; charset=utf-8');

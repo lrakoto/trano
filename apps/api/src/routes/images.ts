@@ -1,17 +1,22 @@
 import { FastifyInstance } from 'fastify';
+import { S3Client, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { Upload } from '@aws-sdk/lib-storage';
 import { prisma } from '../lib/prisma';
-import fs from 'fs';
-import path from 'path';
 import crypto from 'crypto';
-import { pipeline } from 'stream/promises';
 
-export const UPLOAD_DIR =
-  process.env.UPLOAD_DIR ?? path.join(process.cwd(), 'uploads');
+const s3 = new S3Client({
+  region:   'auto',
+  endpoint: `https://${process.env.CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+  credentials: {
+    accessKeyId:     process.env.R2_ACCESS_KEY_ID!,
+    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
+  },
+});
 
-const BASE_URL = process.env.BASE_URL ?? 'https://api.trano.app';
+const BUCKET      = 'trano-images';
+const PUBLIC_URL  = (process.env.R2_PUBLIC_URL ?? '').replace(/\/$/, ''); // e.g. https://pub-xxx.r2.dev
 
-const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp'];
-const EXT_MAP: Record<string, string> = {
+const ALLOWED_MIME: Record<string, string> = {
   'image/jpeg': '.jpg',
   'image/png':  '.png',
   'image/webp': '.webp',
@@ -38,30 +43,32 @@ export async function imageRoutes(app: FastifyInstance) {
     const data = await request.file();
     if (!data) return reply.status(400).send({ error: 'No file uploaded' });
 
-    if (!ALLOWED_MIME.includes(data.mimetype)) {
-      // drain the stream to avoid hanging
+    const ext = ALLOWED_MIME[data.mimetype];
+    if (!ext) {
       data.file.resume();
       return reply.status(400).send({ error: 'Only JPEG, PNG, or WebP images are allowed' });
     }
 
-    fs.mkdirSync(UPLOAD_DIR, { recursive: true });
-
-    const ext      = EXT_MAP[data.mimetype] ?? '.jpg';
-    const filename = `${crypto.randomUUID()}${ext}`;
-    const filePath = path.join(UPLOAD_DIR, filename);
+    const key = `listings/${id}/${crypto.randomUUID()}${ext}`;
 
     try {
-      await pipeline(data.file, fs.createWriteStream(filePath));
+      await new Upload({
+        client: s3,
+        params: {
+          Bucket:      BUCKET,
+          Key:         key,
+          Body:        data.file,
+          ContentType: data.mimetype,
+        },
+      }).done();
     } catch {
-      // clean up partial file
-      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
       return reply.status(500).send({ error: 'Upload failed' });
     }
 
     const image = await prisma.listingImage.create({
       data: {
         listingId: id,
-        url:       `${BASE_URL}/uploads/${filename}`,
+        url:       `${PUBLIC_URL}/${key}`,
         order:     imageCount,
       },
     });
@@ -86,12 +93,11 @@ export async function imageRoutes(app: FastifyInstance) {
       return reply.status(404).send({ error: 'Image not found' });
     }
 
-    // Delete file from disk (best-effort)
+    // Extract R2 key from stored URL and delete from bucket
     try {
-      const filename = path.basename(new URL(image.url).pathname);
-      const filePath = path.join(UPLOAD_DIR, filename);
-      if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
-    } catch { /* ignore */ }
+      const key = image.url.replace(`${PUBLIC_URL}/`, '');
+      await s3.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: key }));
+    } catch { /* ignore — DB record still gets removed */ }
 
     await prisma.listingImage.delete({ where: { id: imageId } });
     return reply.status(204).send();
