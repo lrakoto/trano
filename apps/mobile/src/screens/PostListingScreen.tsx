@@ -124,12 +124,12 @@ export function PostListingScreen() {
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsMultipleSelection: true,
       quality: 0.75,
       selectionLimit: Math.max(1, 10 - totalImages),
     });
-    if (!result.canceled) {
+    if (!result.canceled && result.assets.length > 0) {
       setPickedImages((prev) =>
         [...prev, ...result.assets.map((a) => a.uri)].slice(0, 10 - existingImages.length),
       );
@@ -160,11 +160,15 @@ export function PostListingScreen() {
       const mimeType  = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
       const formData  = new FormData();
       formData.append('file', { uri, name: filename, type: mimeType } as any);
-      await fetch(`${API_BASE_URL}/listings/${id}/images`, {
+      const r = await fetch(`${API_BASE_URL}/listings/${id}/images`, {
         method:  'POST',
         headers: { Authorization: `Bearer ${token}` },
         body:    formData,
       });
+      if (!r.ok) {
+        const err = await r.json().catch(() => ({ error: `HTTP ${r.status}` }));
+        throw new Error(err.message ?? err.error ?? `Sary tsy vita (${r.status})`);
+      }
     }
   };
 
