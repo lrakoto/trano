@@ -134,7 +134,7 @@ export function HomeScreen() {
           showsUserLocation={!!userLocation}
           showsMyLocationButton={false}
         >
-          {filtered.map((listing) => (
+          {listings.map((listing) => (
             <Marker
               key={listing.id}
               coordinate={{ latitude: listing.latitude, longitude: listing.longitude }}
