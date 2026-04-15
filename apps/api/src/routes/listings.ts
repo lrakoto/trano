@@ -35,12 +35,13 @@ const querySchema = z.object({
   propertyType: z.enum(['HOUSE', 'APARTMENT', 'LAND', 'COMMERCIAL']).optional(),
   minPrice:     z.coerce.number().optional(),
   maxPrice:     z.coerce.number().optional(),
+  sort:         z.enum(['newest', 'price_asc', 'price_desc']).default('newest'),
 });
 
 export async function listingRoutes(app: FastifyInstance) {
   // GET /listings — paginated, filterable list (150 req/min per IP)
   app.get('/', { config: { rateLimit: { max: 150, timeWindow: '1 minute' } } }, async (request) => {
-    const { page, pageSize, region, listingType, propertyType, minPrice, maxPrice } =
+    const { page, pageSize, region, listingType, propertyType, minPrice, maxPrice, sort } =
       querySchema.parse(request.query);
 
     const where: any = { status: 'ACTIVE', isModerated: false };
@@ -53,12 +54,17 @@ export async function listingRoutes(app: FastifyInstance) {
       if (maxPrice) where.priceMga.lte = BigInt(maxPrice);
     }
 
+    const orderBy =
+      sort === 'price_asc'  ? { priceMga: 'asc'  as const } :
+      sort === 'price_desc' ? { priceMga: 'desc' as const } :
+                              { createdAt: 'desc' as const };
+
     const [data, total] = await Promise.all([
       prisma.listing.findMany({
         where,
         skip: (page - 1) * pageSize,
         take: pageSize,
-        orderBy: { createdAt: 'desc' },
+        orderBy,
         include: {
           images: { orderBy: { order: 'asc' }, take: 1 },
           owner: { select: { id: true, name: true, isVerified: true, role: true } },

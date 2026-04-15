@@ -37,17 +37,20 @@ export function HomeScreen() {
 
   const cityFilter = (route.params as any)?.cityFilter as string | undefined;
 
+  type SortOption = 'newest' | 'price_asc' | 'price_desc';
+
   const [listings,     setListings]     = useState<Listing[]>([]);
   const [filtered,     setFiltered]     = useState<Listing[]>([]);
   const [loading,      setLoading]      = useState(true);
   const [refreshing,   setRefreshing]   = useState(false);
   const [search,       setSearch]       = useState(cityFilter ?? '');
+  const [sort,         setSort]         = useState<SortOption>('newest');
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [kbHeight,     setKbHeight]     = useState(0);
 
-  const fetchListings = (isRefresh = false) => {
+  const fetchListings = (isRefresh = false, currentSort = sort) => {
     if (isRefresh) setRefreshing(true); else setLoading(true);
-    fetch(`${API_BASE_URL}/listings`)
+    fetch(`${API_BASE_URL}/listings?sort=${currentSort}&pageSize=50`)
       .then((r) => r.json())
       .then((res) => {
         const data = res.data ?? [];
@@ -58,6 +61,20 @@ export function HomeScreen() {
   };
 
   useEffect(() => { fetchListings(); }, []);
+
+  const cycleSort = () => {
+    const next: SortOption =
+      sort === 'newest'     ? 'price_asc'  :
+      sort === 'price_asc'  ? 'price_desc' : 'newest';
+    setSort(next);
+    fetchListings(false, next);
+  };
+
+  const SORT_LABEL: Record<SortOption, string> = {
+    newest:     'Vaovao',
+    price_asc:  'Vidiny ↑',
+    price_desc: 'Vidiny ↓',
+  };
 
   useEffect(() => {
     (async () => {
@@ -140,6 +157,17 @@ export function HomeScreen() {
 
       {/* ── Listings ──────────────────────────────────────── */}
       <View style={styles.listWrapper}>
+        {/* Sort bar */}
+        <View style={styles.sortBar}>
+          <Text style={styles.sortCount}>
+            {filtered.length} trano
+          </Text>
+          <TouchableOpacity style={styles.sortBtn} onPress={cycleSort} activeOpacity={0.7}>
+            <Ionicons name="swap-vertical-outline" size={13} color={COLORS.primary} />
+            <Text style={styles.sortBtnText}>{SORT_LABEL[sort]}</Text>
+          </TouchableOpacity>
+        </View>
+
         {loading ? (
           <ActivityIndicator style={styles.loader} color={COLORS.primaryMid} />
         ) : (
@@ -306,7 +334,28 @@ const styles = StyleSheet.create({
 
   listWrapper:  { flex: 1, marginBottom: 54, backgroundColor: COLORS.background },
   loader:       { marginTop: 30 },
-  list:         { paddingHorizontal: 14, paddingTop: 25, paddingBottom: 4 },
+  list:         { paddingHorizontal: 14, paddingTop: 8, paddingBottom: 4 },
+  sortBar: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    justifyContent:    'space-between',
+    paddingHorizontal: 14,
+    paddingTop:        10,
+    paddingBottom:      6,
+  },
+  sortCount:   { fontSize: 12, color: COLORS.textMuted, fontWeight: '500' },
+  sortBtn: {
+    flexDirection:     'row',
+    alignItems:        'center',
+    gap:                4,
+    backgroundColor:   COLORS.surface,
+    borderWidth:        1,
+    borderColor:       COLORS.border,
+    borderRadius:      20,
+    paddingHorizontal: 10,
+    paddingVertical:    5,
+  },
+  sortBtnText: { fontSize: 12, fontWeight: '700', color: COLORS.primary },
   emptyWrap:    { alignItems: 'center', marginTop: 40, gap: 8 },
   emptyText:    { color: COLORS.textMuted, fontSize: 13, textAlign: 'center' },
 
