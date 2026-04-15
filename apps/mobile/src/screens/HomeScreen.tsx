@@ -48,14 +48,13 @@ export function HomeScreen() {
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [kbHeight,     setKbHeight]     = useState(0);
 
-  const fetchListings = (isRefresh = false, currentSort = sort) => {
+  const fetchListings = (isRefresh = false) => {
     if (isRefresh) setRefreshing(true); else setLoading(true);
-    fetch(`${API_BASE_URL}/listings?sort=${currentSort}&pageSize=50`)
+    fetch(`${API_BASE_URL}/listings?pageSize=50`)
       .then((r) => r.json())
       .then((res) => {
         const data = res.data ?? [];
         setListings(data);
-        setFiltered(data);
       })
       .finally(() => { setLoading(false); setRefreshing(false); });
   };
@@ -63,11 +62,9 @@ export function HomeScreen() {
   useEffect(() => { fetchListings(); }, []);
 
   const cycleSort = () => {
-    const next: SortOption =
-      sort === 'newest'     ? 'price_asc'  :
-      sort === 'price_asc'  ? 'price_desc' : 'newest';
-    setSort(next);
-    fetchListings(false, next);
+    setSort((prev) =>
+      prev === 'newest' ? 'price_asc' : prev === 'price_asc' ? 'price_desc' : 'newest',
+    );
   };
 
   const SORT_LABEL: Record<SortOption, string> = {
@@ -109,14 +106,20 @@ export function HomeScreen() {
 
   useEffect(() => {
     const q = search.trim().toLowerCase();
-    setFiltered(
-      q ? listings.filter((l) =>
-        l.city.toLowerCase().includes(q) ||
-        l.title.toLowerCase().includes(q) ||
-        l.region.toLowerCase().includes(q),
-      ) : listings,
-    );
-  }, [search, listings]);
+    const base = q
+      ? listings.filter((l) =>
+          l.city.toLowerCase().includes(q) ||
+          l.title.toLowerCase().includes(q) ||
+          l.region.toLowerCase().includes(q),
+        )
+      : [...listings];
+
+    if (sort === 'price_asc')  base.sort((a, b) => a.priceMga - b.priceMga);
+    if (sort === 'price_desc') base.sort((a, b) => b.priceMga - a.priceMga);
+    // 'newest' order comes from the API (createdAt desc) — no sort needed
+
+    setFiltered(base);
+  }, [search, listings, sort]);
 
   return (
     <View style={styles.container}>
