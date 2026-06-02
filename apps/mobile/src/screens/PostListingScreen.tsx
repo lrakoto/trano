@@ -50,6 +50,10 @@ export function PostListingScreen() {
   const route        = useRoute<NativeStackScreenProps<RootStackParamList, 'PostListing'>['route']>();
   const listingId    = (route.params as any)?.listingId as string | undefined;
   const isEdit       = !!listingId;
+
+  useEffect(() => {
+    if (isEdit) navigation.setOptions({ title: 'Hanova lisitra' });
+  }, [isEdit]);
   const { token }    = useAuth();
   const [loading,        setLoading]        = useState(false);
   const [locLoading,     setLocLoading]     = useState(false);
@@ -143,13 +147,17 @@ export function PostListingScreen() {
   const removeExistingImage = async (image: ListingImage) => {
     if (!listingId) return;
     try {
-      await fetch(`${API_BASE_URL}/listings/${listingId}/images/${image.id}`, {
+      const res = await fetch(`${API_BASE_URL}/listings/${listingId}/images/${image.id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error ?? `HTTP ${res.status}`);
+      }
       setExistingImages((prev) => prev.filter((img) => img.id !== image.id));
-    } catch {
-      Alert.alert('Diso', 'Tsy afaka namafa ny sary');
+    } catch (e: any) {
+      Alert.alert('Diso', e.message ?? 'Tsy afaka namafa ny sary');
     }
   };
 
@@ -381,7 +389,7 @@ export function PostListingScreen() {
         </Field>
 
         {/* ── Images ────────────────────────────────────────────── */}
-        <Field label="Sary (10 farafaharetsiny)">
+        <Field label="Sary (10 farafaharatsiny)">
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             <View style={imgStyles.row}>
               {/* Existing images (edit mode) */}

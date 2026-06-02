@@ -48,7 +48,7 @@ export async function imageRoutes(app: FastifyInstance) {
     const ext = ALLOWED_MIME[data.mimetype];
     if (!ext) {
       data.file.resume();
-      return reply.status(400).send({ error: 'Only JPEG, PNG, or WebP images are allowed' });
+      return reply.status(400).send({ error: 'Only JPEG, PNG, WebP, HEIC, or HEIF images are allowed' });
     }
 
     const key = `listings/${id}/${crypto.randomUUID()}${ext}`;

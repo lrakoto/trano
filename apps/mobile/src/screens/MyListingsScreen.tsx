@@ -54,13 +54,17 @@ export function MyListingsScreen() {
           text: 'Hamafa', style: 'destructive',
           onPress: async () => {
             try {
-              await fetch(`${API_BASE_URL}/listings/${listing.id}`, {
+              const res = await fetch(`${API_BASE_URL}/listings/${listing.id}`, {
                 method:  'DELETE',
                 headers: { Authorization: `Bearer ${token}` },
               });
+              if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.error ?? `HTTP ${res.status}`);
+              }
               setListings((prev) => prev.filter((l) => l.id !== listing.id));
-            } catch {
-              Alert.alert('Diso', 'Tsy afaka namafa');
+            } catch (e: any) {
+              Alert.alert('Diso', e.message ?? 'Tsy afaka namafa');
             }
           },
         },
