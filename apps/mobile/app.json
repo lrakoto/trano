@@ -13,8 +13,18 @@
       "package": "mg.trano.app"
     },
     "plugins": [
-      "expo-location",
-      "expo-image-picker",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Mampiasa ny toeranao i Trano mba hametrahana ny lisitranao eo amin'ny sarintany."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Mila fahazoan-dalana i Trano mba haka sary avy amin'ny tahirinao ho an'ny lisitranao."
+        }
+      ],
       "expo-secure-store"
     ]
   }
