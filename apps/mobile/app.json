@@ -10,7 +10,11 @@
       "bundleIdentifier": "mg.trano.app"
     },
     "android": {
-      "package": "mg.trano.app"
+      "package": "mg.trano.app",
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
     },
     "plugins": [
       [
@@ -26,6 +30,12 @@
         }
       ],
       "expo-secure-store"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "bc19ed78-6e57-4466-b99c-2e562fa29d64"
+      }
+    },
+    "owner": "lovarakoto"
   }
 }
