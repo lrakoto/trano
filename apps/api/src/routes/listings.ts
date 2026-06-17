@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma';
+import { r2KeyFromUrl, deleteR2Objects } from '../lib/r2';
 
 const REGION_VALUES = [
   'ANALAMANGA', 'VAKINANKARATRA', 'ITASY', 'BONGOLAVA', 'MATSIATRA_AMBONY',
@@ -144,7 +145,14 @@ export async function listingRoutes(app: FastifyInstance) {
     const existing = await prisma.listing.findUnique({ where: { id } });
     if (!existing)                   return reply.status(404).send({ error: 'Not found' });
     if (existing.ownerId !== userId) return reply.status(403).send({ error: 'Forbidden' });
-    await prisma.listing.delete({ where: { id } });
+
+    // Grab image keys before the cascade delete removes the rows, then clean R2
+    const images = await prisma.listingImage.findMany({
+      where:  { listingId: id },
+      select: { url: true },
+    });
+    await prisma.listing.delete({ where: { id } }); // cascades ListingImage rows
+    await deleteR2Objects(images.map((img) => r2KeyFromUrl(img.url)));
     return reply.status(204).send();
   });
 

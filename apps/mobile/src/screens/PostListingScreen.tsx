@@ -165,7 +165,12 @@ export function PostListingScreen() {
     for (const uri of pickedImages) {
       const filename  = uri.split('/').pop() ?? 'photo.jpg';
       const ext       = filename.split('.').pop()?.toLowerCase() ?? 'jpg';
-      const mimeType  = ext === 'png' ? 'image/png' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
+      const mimeType  =
+        ext === 'png'  ? 'image/png'  :
+        ext === 'webp' ? 'image/webp' :
+        ext === 'heic' ? 'image/heic' :
+        ext === 'heif' ? 'image/heif' :
+                         'image/jpeg';
       const formData  = new FormData();
       formData.append('file', { uri, name: filename, type: mimeType } as any);
       const r = await fetch(`${API_BASE_URL}/listings/${id}/images`, {

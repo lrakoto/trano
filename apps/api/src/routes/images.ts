@@ -1,20 +1,8 @@
 import { FastifyInstance } from 'fastify';
-import { S3Client, DeleteObjectCommand } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
 import { prisma } from '../lib/prisma';
+import { r2, BUCKET, PUBLIC_URL, r2KeyFromUrl, deleteR2Objects } from '../lib/r2';
 import crypto from 'crypto';
-
-const s3 = new S3Client({
-  region:   'auto',
-  endpoint: `https://${process.env.CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-  credentials: {
-    accessKeyId:     process.env.R2_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
-  },
-});
-
-const BUCKET      = 'trano-images';
-const PUBLIC_URL  = (process.env.R2_PUBLIC_URL ?? '').replace(/\/$/, ''); // e.g. https://pub-xxx.r2.dev
 
 const ALLOWED_MIME: Record<string, string> = {
   'image/jpeg': '.jpg',
@@ -55,7 +43,7 @@ export async function imageRoutes(app: FastifyInstance) {
 
     try {
       await new Upload({
-        client: s3,
+        client: r2,
         params: {
           Bucket:      BUCKET,
           Key:         key,
@@ -95,12 +83,8 @@ export async function imageRoutes(app: FastifyInstance) {
       return reply.status(404).send({ error: 'Image not found' });
     }
 
-    // Extract R2 key from stored URL and delete from bucket
-    try {
-      const key = image.url.replace(`${PUBLIC_URL}/`, '');
-      await s3.send(new DeleteObjectCommand({ Bucket: BUCKET, Key: key }));
-    } catch { /* ignore — DB record still gets removed */ }
-
+    // Remove from bucket (best-effort) then drop the DB record
+    await deleteR2Objects([r2KeyFromUrl(image.url)]);
     await prisma.listingImage.delete({ where: { id: imageId } });
     return reply.status(204).send();
   });
