@@ -67,30 +67,61 @@ export function buildApp() {
 
   app.get('/health', async () => ({ status: 'ok' }));
 
-  app.get('/privacy', async (_req, reply) => {
-    reply.type('text/html; charset=utf-8');
-    return `<!DOCTYPE html>
+  // ── Public pages: landing, privacy policy, support ──────────────────────
+  // Plain HTML served by the API so trano.app / api.trano.app have the pages
+  // the App Store listing links to (privacy policy URL, support URL).
+  const page = (title: string, body: string) => `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Privacy Policy — Trano</title>
+  <title>${title} — Trano</title>
   <style>
     body { font-family: -apple-system, sans-serif; max-width: 680px; margin: 40px auto; padding: 0 20px; color: #111; line-height: 1.7; }
     h1   { color: #1A2B24; }
     h2   { color: #1A2B24; margin-top: 32px; }
     a    { color: #E8A000; }
+    .brand { font-weight: 800; color: #1A2B24; font-size: 2rem; }
+    .muted { color: #555550; }
   </style>
 </head>
 <body>
+${body}
+  <p class="muted" style="margin-top:48px;font-size:0.85rem;"><a href="/">Trano</a> · <a href="/privacy">Privacy</a> · <a href="/support">Support</a></p>
+</body>
+</html>`;
+
+  app.get('/', async (_req, reply) => {
+    reply.type('text/html; charset=utf-8');
+    return page('Home', `
+  <p class="brand">Trano</p>
+  <p>Fampiharana fitadiavana trano any Madagasikara.<br/>
+  <span class="muted">A real-estate app for Madagascar: browse homes, land and rentals by city, and contact owners on WhatsApp.</span></p>
+  <p>Available on the App Store for iPhone.</p>`);
+  });
+
+  app.get('/support', async (_req, reply) => {
+    reply.type('text/html; charset=utf-8');
+    return page('Support', `
+  <h1>Support</h1>
+  <p>Questions, problems or feedback about the Trano app? Email <a href="mailto:hello@trano.app">hello@trano.app</a> and we will get back to you.</p>
+  <h2>Delete your account</h2>
+  <p>Email <a href="mailto:hello@trano.app">hello@trano.app</a> from the phone number on your account and we will delete your account, your listings and their photos within 30 days.</p>
+  <h2>Report a listing</h2>
+  <p>Use the report button on a listing in the app. Listings reported several times are taken down for review automatically.</p>`);
+  });
+
+  app.get('/privacy', async (_req, reply) => {
+    reply.type('text/html; charset=utf-8');
+    return page('Privacy Policy', `
   <h1>Privacy Policy</h1>
-  <p><strong>Last updated: April 14, 2026</strong></p>
+  <p><strong>Last updated: October 3, 2026</strong></p>
   <p>Trano ("we", "our", or "us") operates the Trano mobile application. This page explains what information we collect, how we use it, and your rights.</p>
 
   <h2>Information We Collect</h2>
   <ul>
     <li><strong>Account data:</strong> name, phone number, and optional email address provided at registration.</li>
-    <li><strong>Listing data:</strong> property details, description, price, location coordinates, and WhatsApp contact number that you voluntarily submit.</li>
+    <li><strong>Listing data:</strong> property details, description, price, photos, location coordinates, and WhatsApp contact number that you voluntarily submit.</li>
     <li><strong>Device location:</strong> only when you choose to use the "Use my location" feature to pin a listing. We do not track your location in the background.</li>
   </ul>
 
@@ -103,7 +134,7 @@ export function buildApp() {
   </ul>
 
   <h2>Data Storage</h2>
-  <p>Your data is stored on servers located in Germany (Hetzner). Passwords are hashed using bcrypt and never stored in plain text. Authentication tokens expire after 24 hours.</p>
+  <p>Account and listing data are stored on servers operated by Render in Frankfurt, Germany. Listing photos are stored with Cloudflare R2. Passwords are hashed using bcrypt and never stored in plain text. Authentication tokens expire after 24 hours.</p>
 
   <h2>Your Rights</h2>
   <p>You may request deletion of your account and all associated data by contacting us at <a href="mailto:hello@trano.app">hello@trano.app</a>. We will action all requests within 30 days.</p>
@@ -115,9 +146,7 @@ export function buildApp() {
   <p>We may update this policy. Continued use of the app after changes constitutes acceptance.</p>
 
   <h2>Contact</h2>
-  <p>Questions? Email <a href="mailto:hello@trano.app">hello@trano.app</a></p>
-</body>
-</html>`;
+  <p>Questions? Email <a href="mailto:hello@trano.app">hello@trano.app</a></p>`);
   });
 
   return app;
