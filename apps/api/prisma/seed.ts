@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import { randomBytes } from 'crypto';
 
 const prisma = new PrismaClient();
 
@@ -7,7 +8,11 @@ async function main() {
   console.log('🌱 Seeding database...');
 
   // ── Seed user ────────────────────────────────────────────────────────────────
-  const passwordHash = await bcrypt.hash('password123', 10);
+  // Demo accounts own the seed listings. In production they get a random
+  // password nobody knows (the repo is public), so they can't be logged into.
+  const production = process.env.NODE_ENV === 'production';
+  const password = production ? randomBytes(24).toString('hex') : 'password123';
+  const passwordHash = await bcrypt.hash(password, 10);
 
   const agent = await prisma.user.upsert({
     where: { phone: '+261340000001' },
@@ -210,6 +215,13 @@ async function main() {
     },
   ];
 
+  // Idempotent: the Render build runs this on every deploy
+  const existing = await prisma.listing.count();
+  if (existing > 0) {
+    console.log(`Seed skipped: ${existing} listings already exist`);
+    return;
+  }
+
   let created = 0;
   for (const data of listings) {
     await prisma.listing.create({ data });
@@ -217,10 +229,12 @@ async function main() {
   }
 
   console.log(`✅ Created ${created} listings across 5 cities`);
-  console.log('');
-  console.log('🔑 Test credentials:');
-  console.log('   Agent  → phone: +261340000001  password: password123');
-  console.log('   Seller → phone: +261330000002  password: password123');
+  if (!production) {
+    console.log('');
+    console.log('🔑 Test credentials:');
+    console.log('   Agent  → phone: +261340000001  password: password123');
+    console.log('   Seller → phone: +261330000002  password: password123');
+  }
 }
 
 main()

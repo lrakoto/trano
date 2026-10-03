@@ -1,0 +1,59 @@
+# Render Blueprint for the Trano API (apps/api).
+# Deploy: Render Dashboard -> New -> Blueprint -> pick this repo -> Apply.
+# Secrets marked `sync: false` are filled in the dashboard after the first
+# apply; they are deliberately not stored in the repo.
+#
+# Frankfurt is the closest Render region to Madagascar.
+
+databases:
+  - name: trano-db
+    databaseName: trano
+    user: trano_user
+    region: frankfurt
+    # Free Postgres is deleted after 30 days and has no backups.
+    plan: basic-256mb
+    postgresMajorVersion: "16"
+
+services:
+  - type: web
+    name: trano-api
+    runtime: node
+    region: frankfurt
+    # Free web services sleep after 15 minutes; the first request then takes
+    # ~50s, which looks like a broken app to an App Store reviewer.
+    plan: starter
+    branch: main
+    # The monorepo installs from the root (npm workspaces). --include=dev keeps
+    # prisma, tsx and typescript, which NODE_ENV=production would otherwise
+    # drop. Migrations and the (idempotent) seed run on every deploy.
+    buildCommand: >-
+      npm ci --include=dev
+      && npx prisma generate --schema=apps/api/prisma/schema.prisma
+      && npx prisma migrate deploy --schema=apps/api/prisma/schema.prisma
+      && npm run build --workspace=apps/api
+      && npm run db:seed --workspace=apps/api
+    startCommand: node apps/api/dist/index.js
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: trano-db
+          property: connectionString
+      # Generated once by Render and kept stable across deploys.
+      - key: JWT_SECRET
+        generateValue: true
+      # Cloudflare R2 (listing photos). Fill these in the dashboard: the API
+      # boots without them, but photo uploads fail until they are set.
+      - key: CLOUDFLARE_ACCOUNT_ID
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_PUBLIC_URL
+        sync: false
