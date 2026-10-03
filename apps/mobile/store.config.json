@@ -2,7 +2,9 @@
   "configVersion": 0,
   "apple": {
     "copyright": "2026 Lova Rakotomavonandrianina",
-    "categories": ["LIFESTYLE"],
+    "categories": [
+      "LIFESTYLE"
+    ],
     "advisory": {
       "alcoholTobaccoOrDrugUseOrReferences": "NONE",
       "contests": "NONE",
@@ -18,14 +20,27 @@
       "violenceRealisticProlongedGraphicOrSadistic": "NONE",
       "gambling": false,
       "unrestrictedWebAccess": false,
-      "kidsAgeBand": null
+      "kidsAgeBand": null,
+      "ageRatingOverride": "NONE",
+      "koreaAgeRatingOverride": "NONE"
     },
     "info": {
       "en-US": {
         "title": "Trano",
         "subtitle": "Homes & land in Madagascar",
         "description": "Trano is the simple way to find a home in Madagascar.\n\nBrowse houses, apartments, land and rentals across all 22 regions, on a map or as a list. Filter by city, see every listing on satellite imagery, and save the ones you like.\n\nFound something? Contact the owner or agent directly on WhatsApp with one tap.\n\nSelling or renting out? Post your own listing in minutes: add photos, pin the location on the map, set your price in Ariary, and buyers reach you on WhatsApp.\n\n• Listings in every region of Madagascar\n• Map and list views with satellite imagery\n• Save listings to come back to later\n• Direct WhatsApp contact, no middleman\n• Post your own listings with photos and location\n• Prices in Malagasy Ariary\n\nTrano is in Malagasy.",
-        "keywords": ["madagascar", "trano", "house", "land", "rent", "apartment", "real estate", "antananarivo", "immobilier", "maison"],
+        "keywords": [
+          "madagascar",
+          "trano",
+          "house",
+          "land",
+          "rent",
+          "apartment",
+          "real estate",
+          "antananarivo",
+          "immobilier",
+          "maison"
+        ],
         "releaseNotes": "First release.",
         "privacyPolicyUrl": "https://api.trano.app/privacy",
         "supportUrl": "https://api.trano.app/support",
@@ -33,9 +48,20 @@
       },
       "fr-FR": {
         "title": "Trano",
-        "subtitle": "Maisons et terrains à Madagascar",
+        "subtitle": "Immobilier à Madagascar",
         "description": "Trano est la façon simple de trouver un logement à Madagascar.\n\nParcourez maisons, appartements, terrains et locations dans les 22 régions, sur une carte ou en liste. Filtrez par ville, voyez chaque annonce sur l'imagerie satellite et enregistrez celles qui vous plaisent.\n\nUn bien vous intéresse ? Contactez directement le propriétaire ou l'agent sur WhatsApp en un geste.\n\nVous vendez ou louez ? Publiez votre annonce en quelques minutes : ajoutez des photos, placez le bien sur la carte, fixez votre prix en Ariary, et les acheteurs vous contactent sur WhatsApp.\n\n• Des annonces dans toutes les régions de Madagascar\n• Vue carte et liste avec imagerie satellite\n• Enregistrez vos annonces préférées\n• Contact direct par WhatsApp, sans intermédiaire\n• Publiez vos annonces avec photos et localisation\n• Prix en Ariary malgache\n\nTrano est en malgache.",
-        "keywords": ["madagascar", "trano", "maison", "terrain", "location", "appartement", "immobilier", "antananarivo", "tany", "vente"],
+        "keywords": [
+          "madagascar",
+          "trano",
+          "maison",
+          "terrain",
+          "location",
+          "appartement",
+          "immobilier",
+          "antananarivo",
+          "tany",
+          "vente"
+        ],
         "releaseNotes": "Première version.",
         "privacyPolicyUrl": "https://api.trano.app/privacy",
         "supportUrl": "https://api.trano.app/support",
