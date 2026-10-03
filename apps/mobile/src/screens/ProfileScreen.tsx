@@ -49,7 +49,7 @@ export function ProfileScreen() {
 const styles = StyleSheet.create({
   container:    { flex: 1, backgroundColor: COLORS.background, padding: 20 },
   card: {
-    backgroundColor: COLORS.white, borderRadius: 12,
+    backgroundColor: COLORS.surface, borderRadius: 12,
     borderWidth: 1, borderColor: COLORS.border, padding: 20,
   },
   name:         { fontSize: 22, fontWeight: '700', color: COLORS.text },
@@ -57,9 +57,9 @@ const styles = StyleSheet.create({
   row:          { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 10 },
   role: {
     fontSize: 13, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 4,
-    backgroundColor: COLORS.secondary + '22', color: COLORS.secondary,
+    backgroundColor: COLORS.primaryLight + '22', color: COLORS.primaryLight,
   },
-  verified:     { fontSize: 13, color: COLORS.secondary },
+  verified:     { fontSize: 13, color: COLORS.primaryLight },
   logoutButton: {
     marginTop: 'auto', padding: 16, borderRadius: 12,
     borderWidth: 1.5, borderColor: COLORS.danger, alignItems: 'center',
@@ -70,7 +70,7 @@ const styles = StyleSheet.create({
   button: {
     backgroundColor: COLORS.primary, padding: 16, borderRadius: 12, alignItems: 'center',
   },
-  buttonText:   { color: COLORS.white, fontSize: 16, fontWeight: '700' },
+  buttonText:   { color: COLORS.surface, fontSize: 16, fontWeight: '700' },
   link:         { marginTop: 16, alignItems: 'center' },
   linkText:     { fontSize: 14, color: COLORS.textMuted },
   linkBold:     { color: COLORS.primary, fontWeight: '700' },

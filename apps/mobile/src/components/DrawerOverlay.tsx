@@ -10,7 +10,7 @@ import { COLORS } from '../constants';
 import type { NavigationContainerRef } from '@react-navigation/native';
 import type { RootStackParamList } from '../navigation';
 
-const APP_VERSION = '0.1.0';
+const APP_VERSION = '1.0.0';
 
 interface Props {
   navRef: NavigationContainerRef<RootStackParamList>;

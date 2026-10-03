@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import {
   View, Text, TextInput, ScrollView, TouchableOpacity,
   StyleSheet, Alert, KeyboardAvoidingView, Platform, ActivityIndicator, Image,
+  Dimensions,
 } from 'react-native';
 import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
@@ -15,6 +16,9 @@ import { COLORS, API_BASE_URL } from '../constants';
 import { REGIONS } from '@trano/shared';
 import type { RegionValue, ListingType, PropertyType, ListingImage } from '@trano/shared';
 import type { RootStackParamList } from '../navigation';
+
+// The satellite preview fills the content width (ScrollView padding 20 each side)
+const MAP_PREVIEW_W = Dimensions.get('window').width - 40;
 
 type FormState = {
   title:           string;
@@ -335,7 +339,7 @@ export function PostListingScreen() {
               <SatelliteThumb
                 latitude={parseFloat(form.latitude)}
                 longitude={parseFloat(form.longitude)}
-                width={styles.mapPreview.width as number}
+                width={MAP_PREVIEW_W}
                 height={120}
                 delta={0.003}
               />
