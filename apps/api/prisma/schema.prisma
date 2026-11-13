@@ -74,6 +74,7 @@ model User {
   passwordHash     String
   role             Role      @default(BUYER)
   isVerified       Boolean   @default(false)
+  isSuspended      Boolean   @default(false)
   verifiedAt       DateTime?
   profilePicture   String?
   createdAt        DateTime  @default(now())
@@ -84,6 +85,19 @@ model User {
   sentMessages     Message[]  @relation("SentMessages")
   receivedMessages Message[]  @relation("ReceivedMessages")
   reports          Report[]
+  blockedUsers     UserBlock[] @relation("Blocking")
+  blockedBy        UserBlock[] @relation("Blocked")
+}
+
+model UserBlock {
+  blockerId String
+  blockedId String
+  blocker   User     @relation("Blocking", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked   User     @relation("Blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([blockerId, blockedId])
+  @@index([blockedId])
 }
 
 model Listing {
@@ -113,13 +127,15 @@ model Listing {
   // WhatsApp number for this listing (may differ from owner's account phone)
   whatsappContact  String?
 
-  // Moderation — listings flagged by users go to UNDER_REVIEW; admins resolve
+  // Moderation — submissions wait for approval, reports can quarantine live listings.
   reportCount      Int           @default(0)
   isModerated      Boolean       @default(false)
   moderatedAt      DateTime?
+  reviewReadyAt    DateTime?
+  draftKey         String?
 
   ownerId          String
-  owner            User          @relation(fields: [ownerId], references: [id])
+  owner            User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 
   images           ListingImage[]
   favorites        Favorite[]
@@ -134,6 +150,7 @@ model Listing {
   @@index([propertyType])
   @@index([status])
   @@index([ownerId])
+  @@unique([ownerId, draftKey])
 }
 
 model ListingImage {
@@ -145,6 +162,13 @@ model ListingImage {
   createdAt   DateTime @default(now())
 
   @@index([listingId])
+}
+
+model R2Deletion {
+  key           String   @id
+  nextAttemptAt DateTime @default(now())
+
+  @@index([nextAttemptAt])
 }
 
 model Favorite {
@@ -161,9 +185,9 @@ model Favorite {
 model Message {
   id          String    @id @default(cuid())
   senderId    String
-  sender      User      @relation("SentMessages",    fields: [senderId],    references: [id])
+  sender      User      @relation("SentMessages",    fields: [senderId],    references: [id], onDelete: Cascade)
   recipientId String
-  recipient   User      @relation("ReceivedMessages", fields: [recipientId], references: [id])
+  recipient   User      @relation("ReceivedMessages", fields: [recipientId], references: [id], onDelete: Cascade)
   listingId   String?
   listing     Listing?  @relation(fields: [listingId], references: [id])
   content     String
@@ -177,9 +201,9 @@ model Message {
 model Report {
   id          String    @id @default(cuid())
   reporterId  String
-  reporter    User      @relation(fields: [reporterId], references: [id])
+  reporter    User      @relation(fields: [reporterId], references: [id], onDelete: Cascade)
   listingId   String
-  listing     Listing   @relation(fields: [listingId], references: [id])
+  listing     Listing   @relation(fields: [listingId], references: [id], onDelete: Cascade)
   reason      String
   resolved    Boolean   @default(false)
   resolvedAt  DateTime?
@@ -187,4 +211,5 @@ model Report {
 
   @@index([listingId])
   @@index([resolved])
+  @@unique([listingId, reporterId])
 }

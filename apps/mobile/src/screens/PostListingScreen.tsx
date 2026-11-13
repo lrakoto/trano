@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View, Text, TextInput, ScrollView, TouchableOpacity,
-  StyleSheet, Alert, KeyboardAvoidingView, Platform, ActivityIndicator, Image,
+  StyleSheet, Alert, KeyboardAvoidingView, Platform, ActivityIndicator, Image, Linking,
   Dimensions,
 } from 'react-native';
 import * as Location from 'expo-location';
@@ -37,6 +37,12 @@ type FormState = {
   areaSqm:         string;
 };
 
+type PickedImage = { uri: string; uploadId: string };
+
+function newRequestKey() {
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
+}
+
 const LISTING_TYPES:  { value: ListingType;  label: string }[] = [
   { value: 'RENT', label: 'Hofana' },
   { value: 'SALE', label: 'Amidy' },
@@ -52,7 +58,7 @@ const PROPERTY_TYPES: { value: PropertyType; label: string }[] = [
 export function PostListingScreen() {
   const navigation   = useNavigation();
   const route        = useRoute<NativeStackScreenProps<RootStackParamList, 'PostListing'>['route']>();
-  const listingId    = (route.params as any)?.listingId as string | undefined;
+  const listingId    = route.params?.listingId;
   const isEdit       = !!listingId;
 
   useEffect(() => {
@@ -60,9 +66,15 @@ export function PostListingScreen() {
   }, [isEdit]);
   const { token }    = useAuth();
   const [loading,        setLoading]        = useState(false);
+  const [opening,        setOpening]        = useState(isEdit);
+  const [loadError,      setLoadError]      = useState(false);
   const [locLoading,     setLocLoading]     = useState(false);
-  const [pickedImages,   setPickedImages]   = useState<string[]>([]);
+  const [pickedImages,   setPickedImages]   = useState<PickedImage[]>([]);
   const [existingImages, setExistingImages] = useState<ListingImage[]>([]);
+  const [removedImages,  setRemovedImages]  = useState<ListingImage[]>([]);
+  const draftId = useRef(listingId);
+  const draftKey = useRef<string | undefined>(undefined);
+  const submitInFlight = useRef(false);
   const [form, setForm] = useState<FormState>({
     title: '', description: '', priceMga: '', addressFreeform: '',
     city: '', region: 'ANALAMANGA', latitude: '', longitude: '',
@@ -72,10 +84,17 @@ export function PostListingScreen() {
 
   // Pre-fill form when editing
   useEffect(() => {
-    if (!listingId) return;
-    fetch(`${API_BASE_URL}/listings/${listingId}`)
-      .then((r) => r.json())
+    if (!listingId || !token) return;
+    let cancelled = false;
+    setOpening(true);
+    setLoadError(false);
+    fetch(`${API_BASE_URL}/listings/${listingId}`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => {
+        if (!r.ok) throw new Error('Could not load listing');
+        return r.json();
+      })
       .then((l) => {
+        if (cancelled) return;
         setForm({
           title:           l.title,
           description:     l.description,
@@ -94,8 +113,10 @@ export function PostListingScreen() {
         });
         setExistingImages(l.images ?? []);
       })
-      .catch(() => Alert.alert('Diso', 'Tsy afaka naka ny lisitra'));
-  }, [listingId]);
+      .catch(() => { if (!cancelled) setLoadError(true); })
+      .finally(() => { if (!cancelled) setOpening(false); });
+    return () => { cancelled = true; };
+  }, [listingId, token]);
 
   const set = (key: keyof FormState) => (value: string) =>
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -139,7 +160,8 @@ export function PostListingScreen() {
     });
     if (!result.canceled && result.assets.length > 0) {
       setPickedImages((prev) =>
-        [...prev, ...result.assets.map((a) => a.uri)].slice(0, 10 - existingImages.length),
+        [...prev, ...result.assets.map(({ uri }) => ({ uri, uploadId: newRequestKey() }))]
+          .slice(0, 10 - existingImages.length),
       );
     }
   };
@@ -148,25 +170,13 @@ export function PostListingScreen() {
     setPickedImages((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const removeExistingImage = async (image: ListingImage) => {
-    if (!listingId) return;
-    try {
-      const res = await fetch(`${API_BASE_URL}/listings/${listingId}/images/${image.id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error ?? `HTTP ${res.status}`);
-      }
-      setExistingImages((prev) => prev.filter((img) => img.id !== image.id));
-    } catch (e: any) {
-      Alert.alert('Diso', e.message ?? 'Tsy afaka namafa ny sary');
-    }
+  const removeExistingImage = (image: ListingImage) => {
+    setRemovedImages((prev) => [...prev, image]);
+    setExistingImages((prev) => prev.filter((img) => img.id !== image.id));
   };
 
   const uploadImages = async (id: string) => {
-    for (const uri of pickedImages) {
+    for (const { uri, uploadId } of pickedImages) {
       const filename  = uri.split('/').pop() ?? 'photo.jpg';
       const ext       = filename.split('.').pop()?.toLowerCase() ?? 'jpg';
       const mimeType  =
@@ -179,17 +189,21 @@ export function PostListingScreen() {
       formData.append('file', { uri, name: filename, type: mimeType } as any);
       const r = await fetch(`${API_BASE_URL}/listings/${id}/images`, {
         method:  'POST',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}`, 'X-Upload-Id': uploadId },
         body:    formData,
       });
       if (!r.ok) {
         const err = await r.json().catch(() => ({ error: `HTTP ${r.status}` }));
         throw new Error(err.message ?? err.error ?? `Sary tsy vita (${r.status})`);
       }
+      const uploaded: ListingImage = await r.json();
+      setExistingImages((prev) => [...prev, uploaded]);
+      setPickedImages((prev) => prev.filter((image) => image.uploadId !== uploadId));
     }
   };
 
   const handleSubmit = async () => {
+    if (submitInFlight.current || !token) return;
     if (!form.title || !form.description || !form.priceMga || !form.addressFreeform || !form.city) {
       Alert.alert('Diso', 'Fenoy ny saha voaisy *');
       return;
@@ -202,56 +216,83 @@ export function PostListingScreen() {
       Alert.alert('Diso', 'Ilaina ny toerana — tsindrio "Ampiasao ny toerana ankehitriny"');
       return;
     }
+    submitInFlight.current = true;
     setLoading(true);
     try {
+      const existingId = draftId.current;
+      const isCreateRetry = !existingId && !!draftKey.current;
+      if (!existingId) draftKey.current ??= newRequestKey();
+      const body = {
+        title:           form.title,
+        description:     form.description,
+        priceMga:        parseInt(form.priceMga, 10),
+        addressFreeform: form.addressFreeform,
+        city:            form.city,
+        region:          form.region,
+        latitude:        parseFloat(form.latitude),
+        longitude:       parseFloat(form.longitude),
+        listingType:     form.listingType,
+        propertyType:    form.propertyType,
+        whatsappContact: form.whatsappContact || null,
+        bedrooms:        form.bedrooms  ? parseInt(form.bedrooms, 10)  : undefined,
+        bathrooms:       form.bathrooms ? parseInt(form.bathrooms, 10) : undefined,
+        areaSqm:         form.areaSqm   ? parseFloat(form.areaSqm)    : undefined,
+      };
+      const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
       const res = await fetch(
-        isEdit ? `${API_BASE_URL}/listings/${listingId}` : `${API_BASE_URL}/listings`,
+        existingId ? `${API_BASE_URL}/listings/${existingId}` : `${API_BASE_URL}/listings`,
         {
-        method:  isEdit ? 'PATCH' : 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization:  `Bearer ${token}`,
+          method: existingId ? 'PATCH' : 'POST',
+          headers,
+          body: JSON.stringify(existingId ? body : { ...body, draftKey: draftKey.current }),
         },
-        body: JSON.stringify({
-          title:           form.title,
-          description:     form.description,
-          priceMga:        parseInt(form.priceMga, 10),
-          addressFreeform: form.addressFreeform,
-          city:            form.city,
-          region:          form.region,
-          latitude:        parseFloat(form.latitude),
-          longitude:       parseFloat(form.longitude),
-          listingType:     form.listingType,
-          propertyType:    form.propertyType,
-          whatsappContact: form.whatsappContact || undefined,
-          bedrooms:        form.bedrooms  ? parseInt(form.bedrooms, 10)  : undefined,
-          bathrooms:       form.bathrooms ? parseInt(form.bathrooms, 10) : undefined,
-          areaSqm:         form.areaSqm   ? parseFloat(form.areaSqm)    : undefined,
-        }),
-      });
+      );
       if (!res.ok) {
-        const err = await res.json();
+        const err = await res.json().catch(() => ({}));
         throw new Error(err.message ?? err.error ?? 'Tsy vita');
       }
-      const created = await res.json();
-      const targetId = isEdit ? listingId! : created.id;
-      if (pickedImages.length > 0) await uploadImages(targetId);
-      Alert.alert('Vita!', isEdit ? 'Voanova ny lisitra.' : 'Ny lisitrao dia narosona soa aman-tsara.', [
+      const saved: { id: string } = await res.json();
+      draftId.current = saved.id;
+      if (isCreateRetry && res.status === 200) {
+        const updated = await fetch(`${API_BASE_URL}/listings/${saved.id}`, {
+          method: 'PATCH', headers, body: JSON.stringify(body),
+        });
+        if (!updated.ok) throw new Error('Tsy afaka nanova ny lisitra');
+      }
+      for (const { id } of removedImages) {
+        const removed = await fetch(`${API_BASE_URL}/listings/${saved.id}/images/${id}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!removed.ok) throw new Error('Tsy afaka namafa ny sary');
+        setRemovedImages((prev) => prev.filter((image) => image.id !== id));
+      }
+      await uploadImages(saved.id);
+      const submitted = await fetch(`${API_BASE_URL}/listings/${saved.id}/submit`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!submitted.ok) throw new Error('Tsy afaka nandefa ny lisitra hojerena');
+      Alert.alert('Vita!', 'Nalefa hojerena ny lisitrao. Hiseho rehefa voamarina.', [
         { text: 'OK', onPress: () => navigation.goBack() },
       ]);
     } catch (e: any) {
       Alert.alert('Tsy vita', e.message);
     } finally {
+      submitInFlight.current = false;
       setLoading(false);
     }
   };
+
+  if (opening) return <ActivityIndicator style={styles.opening} color={COLORS.primary} />;
+  if (loadError) return <Text style={styles.loadError}>Tsy afaka naka ny lisitra.</Text>;
 
   return (
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled" pointerEvents={loading ? 'none' : 'auto'}>
         {isEdit && (
           <Text style={styles.editBanner}>Hanova lisitra</Text>
         )}
@@ -415,8 +456,8 @@ export function PostListingScreen() {
                 </View>
               ))}
               {/* Newly picked images */}
-              {pickedImages.map((uri, i) => (
-                <View key={uri} style={imgStyles.thumb}>
+              {pickedImages.map(({ uri, uploadId }, i) => (
+                <View key={uploadId} style={imgStyles.thumb}>
                   <Image source={{ uri }} style={imgStyles.img} />
                   <TouchableOpacity
                     style={imgStyles.removeBtn}
@@ -438,8 +479,20 @@ export function PostListingScreen() {
           </ScrollView>
         </Field>
 
+        <Text style={styles.terms}>
+          Amin’ny fandefasana ny lisitra dia manaiky ny{' '}
+          <Text
+            accessibilityRole="link"
+            style={styles.termsLink}
+            onPress={() => Linking.openURL(`${API_BASE_URL}/terms`)
+              .catch(() => Alert.alert('Diso', 'Tsy afaka nanokatra ny fepetra.'))}
+          >
+            fepetra fampiasana
+          </Text>
+          .
+        </Text>
         <GlassButton
-          label={isEdit ? 'Hanova' : 'Manampy lisitra'}
+          label="Alefa hojerena"
           onPress={handleSubmit}
           loading={loading}
           style={styles.button}
@@ -500,6 +553,10 @@ const segStyles = StyleSheet.create({
 });
 
 const styles = StyleSheet.create({
+  opening: { flex: 1 },
+  loadError: { margin: 24, color: COLORS.danger, textAlign: 'center' },
+  terms: { color: COLORS.textSecondary, marginTop: 20 },
+  termsLink: { color: COLORS.primary, textDecorationLine: 'underline', fontWeight: '600' },
   container: { flex: 1, backgroundColor: COLORS.background },
   content:   { padding: 20, paddingBottom: 48 },
   row:       { flexDirection: 'row' },

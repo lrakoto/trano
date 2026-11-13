@@ -14,6 +14,7 @@ import { PostListingScreen } from '../screens/PostListingScreen';
 import { MyListingsScreen } from '../screens/MyListingsScreen';
 import { LoginScreen } from '../screens/LoginScreen';
 import { RegisterScreen } from '../screens/RegisterScreen';
+import { AccountScreen } from '../screens/AccountScreen';
 import { COLORS } from '../constants';
 
 // ─── Param lists ──────────────────────────────────────────────────────────────
@@ -23,6 +24,7 @@ export type RootStackParamList = {
   ListingDetail: { listingId: string };
   PostListing:   { listingId?: string } | undefined;
   MyListings:    undefined;
+  Account:       undefined;
   Login:         undefined;
   Register:      undefined;
 };
@@ -123,6 +125,7 @@ export function RootNavigator() {
       />
       <Stack.Screen name="PostListing"   component={PostListingScreen}   options={{ title: 'Manampy lisitra' }} />
       <Stack.Screen name="MyListings"    component={MyListingsScreen}    options={{ headerShown: false }} />
+      <Stack.Screen name="Account" component={AccountScreen} options={{ title: 'Kaontiko' }} />
       <Stack.Screen name="Login"    component={LoginScreen}    options={{ presentation: 'modal', headerShown: false }} />
       <Stack.Screen name="Register" component={RegisterScreen} options={{ presentation: 'modal', headerShown: false }} />
     </Stack.Navigator>

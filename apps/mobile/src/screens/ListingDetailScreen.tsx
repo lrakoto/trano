@@ -1,8 +1,9 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
-  StyleSheet, Linking, ActivityIndicator, Dimensions, Image, FlatList,
+  StyleSheet, Linking, ActivityIndicator, Dimensions, Image, FlatList, Alert,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { GlassButton } from '../components/GlassButton';
@@ -19,36 +20,122 @@ type Props = NativeStackScreenProps<RootStackParamList, 'ListingDetail'>;
 const SCREEN_WIDTH  = Dimensions.get('window').width;
 const GALLERY_HEIGHT = 240;
 
+type ListingDetail = Listing & { owner: Listing['owner'] & { whatsappPhone?: string } };
+
 export function ListingDetailScreen({ route, navigation }: Props) {
   const { listingId } = route.params;
-  const { user }              = useAuth();
+  const { user, token }       = useAuth();
   const { toggle, isSaved }   = useSaved();
   const insets                = useSafeAreaInsets();
-  const [listing,      setListing]      = useState<Listing | null>(null);
+  const [listing,      setListing]      = useState<ListingDetail | null>(null);
   const [loading,      setLoading]      = useState(true);
   const [activeImg,    setActiveImg]    = useState(0);
+  const [loadError,    setLoadError]    = useState(false);
+  const [reportedKey,  setReportedKey]  = useState<string | undefined>(undefined);
+  const [updating,     setUpdating]     = useState(false);
+  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 50 }).current;
+  const onViewableItemsChanged = useRef(({ viewableItems }: { viewableItems: { index: number | null }[] }) => {
+    if (viewableItems[0]) setActiveImg(viewableItems[0].index ?? 0);
+  }).current;
 
-  useEffect(() => {
-    fetch(`${API_BASE_URL}/listings/${listingId}`)
-      .then((r) => r.json())
-      .then(setListing)
-      .finally(() => setLoading(false));
-  }, [listingId]);
+  useFocusEffect(useCallback(() => {
+    const controller = new AbortController();
+    setLoading(true);
+    setLoadError(false);
+    setActiveImg(0);
+    fetch(`${API_BASE_URL}/listings/${listingId}`, {
+      signal: controller.signal,
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    })
+      .then((r) => {
+        if (r.status === 404) return null;
+        if (!r.ok) throw new Error('Could not load listing');
+        return r.json() as Promise<ListingDetail>;
+      })
+      .then((data) => { if (!controller.signal.aborted) setListing(data); })
+      .catch(() => { if (!controller.signal.aborted) setLoadError(true); })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
+  }, [listingId, token]));
 
   if (loading) return <ActivityIndicator style={styles.loader} color={COLORS.primary} />;
+  if (loadError) return <Text style={styles.error}>Tsy afaka naka ny lisitra. Andramo indray.</Text>;
   if (!listing) return <Text style={styles.error}>Tsy hita ilay lisitra</Text>;
 
-  const waPhone = listing.whatsappContact ?? (listing.owner as any).whatsappPhone;
+  const isOwner = user?.id === listing.owner.id;
+  const isPublic = listing.status === 'ACTIVE';
+  const reportKey = `${user?.id}:${listing.id}:${listing.updatedAt}`;
+  const reported = reportedKey === reportKey;
+  const waPhone = listing.whatsappContact ?? listing.owner.whatsappPhone;
 
   const handleWhatsApp = () => {
     if (!waPhone) return;
     const msg = encodeURIComponent(WHATSAPP_PREFILL(listing.title));
-    Linking.openURL(`https://wa.me/${waPhone.replace(/\D/g, '')}?text=${msg}`);
+    Linking.openURL(`https://wa.me/${waPhone.replace(/\D/g, '')}?text=${msg}`)
+      .catch(() => Alert.alert('Diso', 'Tsy afaka nanokatra WhatsApp.'));
   };
 
   const handleFavorite = () => {
     if (!user) { navigation.navigate('Login'); return; }
     if (listing) toggle(listing);
+  };
+
+  const sendReport = async (reason: string) => {
+    setUpdating(true);
+    try {
+      const result = await fetch(`${API_BASE_URL}/listings/${listingId}/report`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ reason }),
+      });
+      if (result.status === 409) {
+        setReportedKey(reportKey);
+        Alert.alert('Efa nalefa', 'Efa nanao tatitra momba ity lisitra ity ianao.');
+        return;
+      }
+      if (!result.ok) throw new Error('Could not report listing');
+      setReportedKey(reportKey);
+      Alert.alert('Voaray ny tatitra', 'Hojerenay ity lisitra ity.');
+    } catch {
+      Alert.alert('Diso', 'Tsy afaka nandefa ny tatitra. Andramo indray.');
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handleReport = () => {
+    if (!token) { navigation.navigate('Login'); return; }
+    Alert.alert('Hitatitra ity lisitra ity', 'Inona no antony?', [
+      { text: 'Fisolokiana', onPress: () => sendReport('Fisolokiana') },
+      { text: 'Votoaty tsy mendrika', onPress: () => sendReport('Votoaty tsy mendrika') },
+      { text: 'Hanafoana', style: 'cancel' },
+    ]);
+  };
+
+  const handleBlock = () => {
+    if (!token) { navigation.navigate('Login'); return; }
+    Alert.alert('Hanakana ity mpampiasa ity?', 'Hafenina aminao ny lisitra rehetra navoakany.', [
+      { text: 'Hanafoana', style: 'cancel' },
+      {
+        text: 'Hanakana',
+        style: 'destructive',
+        onPress: async () => {
+          setUpdating(true);
+          try {
+            const result = await fetch(`${API_BASE_URL}/listings/${listingId}/block-owner`, {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            if (!result.ok) throw new Error('Could not block user');
+            navigation.goBack();
+          } catch {
+            Alert.alert('Diso', 'Tsy afaka nanakana ity mpampiasa ity. Andramo indray.');
+          } finally {
+            setUpdating(false);
+          }
+        },
+      },
+    ]);
   };
 
   return (
@@ -69,10 +156,8 @@ export function ListingDetailScreen({ route, navigation }: Props) {
                 horizontal
                 pagingEnabled
                 showsHorizontalScrollIndicator={false}
-                onViewableItemsChanged={({ viewableItems }) => {
-                  if (viewableItems[0]) setActiveImg(viewableItems[0].index ?? 0);
-                }}
-                viewabilityConfig={{ itemVisiblePercentThreshold: 50 }}
+                onViewableItemsChanged={onViewableItemsChanged}
+                viewabilityConfig={viewabilityConfig}
                 renderItem={({ item }) => (
                   <Image
                     source={{ uri: item.url }}
@@ -109,18 +194,25 @@ export function ListingDetailScreen({ route, navigation }: Props) {
               </Text>
               <Text style={styles.satelliteTag}>{listing.propertyType}</Text>
             </View>
-            <TouchableOpacity style={styles.heartButton} onPress={handleFavorite} activeOpacity={0.8}>
-              <Ionicons
-                name={listing && user && isSaved(listing.id) ? 'heart' : 'heart-outline'}
-                size={20}
-                color={listing && user && isSaved(listing.id) ? '#FF4D6D' : '#fff'}
-              />
-            </TouchableOpacity>
+            {isPublic && (
+              <TouchableOpacity style={styles.heartButton} onPress={handleFavorite} activeOpacity={0.8}>
+                <Ionicons
+                  name={user && isSaved(listing.id) ? 'heart' : 'heart-outline'}
+                  size={20}
+                  color={user && isSaved(listing.id) ? '#FF4D6D' : '#fff'}
+                />
+              </TouchableOpacity>
+            )}
           </View>
         </View>
 
         <View style={styles.body}>
           <Text style={styles.title}>{listing.title}</Text>
+          {isOwner && !isPublic && (
+            <Text style={styles.reviewStatus}>
+              {listing.status === 'UNDER_REVIEW' ? 'Mbola tsy navoaka' : 'Tsy mavitrika'}
+            </Text>
+          )}
           <Text style={styles.price}>
             {Number(listing.priceMga).toLocaleString('fr-MG')}
             <Text style={styles.priceSuffix}> MGA</Text>
@@ -155,12 +247,22 @@ export function ListingDetailScreen({ route, navigation }: Props) {
               )}
             </View>
           </View>
+          {!isOwner && isPublic && (
+            <View style={styles.safetyActions}>
+              <TouchableOpacity accessibilityRole="button" onPress={handleReport} disabled={updating || reported}>
+                <Text style={styles.safetyText}>{reported ? 'Voaray ny tatitra' : 'Hitatitra'}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity accessibilityRole="button" onPress={handleBlock} disabled={updating}>
+                <Text style={styles.safetyText}>Hanakana ny mpampiasa</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       </ScrollView>
 
       {/* Floating action area */}
       <View style={[styles.bottomBar, { paddingBottom: Math.max(0, insets.bottom - 4) }]}>
-        {user && (listing.owner as any).id === user.id && (
+        {isOwner && (
           <TouchableOpacity
             style={styles.editBtn}
             onPress={() => navigation.navigate('PostListing', { listingId: listing.id })}
@@ -170,7 +272,7 @@ export function ListingDetailScreen({ route, navigation }: Props) {
             <Text style={styles.editBtnText}>Hanova</Text>
           </TouchableOpacity>
         )}
-        {waPhone && (
+        {isPublic && waPhone && (
           <GlassButton
             label="Mifandraisa amin'i WhatsApp"
             onPress={handleWhatsApp}
@@ -245,6 +347,9 @@ const styles = StyleSheet.create({
   // Body
   body:         { padding: 20 },
   title:        { fontSize: 22, fontWeight: '800', color: COLORS.text },
+  reviewStatus: { color: COLORS.textSecondary, marginTop: 6, fontWeight: '600' },
+  safetyActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 16, marginTop: 16 },
+  safetyText: { color: COLORS.primary, paddingVertical: 12, fontWeight: '600' },
   price:        { fontSize: 24, fontWeight: '800', color: COLORS.primary, marginTop: 6 },
   priceSuffix:  { fontSize: 14, fontWeight: '500', color: COLORS.textSecondary },
   usd:          { fontSize: 13, color: COLORS.textMuted, marginTop: 2 },

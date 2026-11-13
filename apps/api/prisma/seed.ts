@@ -25,9 +25,9 @@ async function main() {
       email:         'rakoto@trano.mg',
       passwordHash,
       role:          'AGENT',
-      isVerified:    true,
-      verifiedAt:    new Date(),
-      whatsappPhone: '+261340000001',
+      isVerified:    !production,
+      verifiedAt:    production ? null : new Date(),
+      whatsappPhone: production ? null : '+261340000001',
     },
   });
 
@@ -40,7 +40,7 @@ async function main() {
       passwordHash,
       role:          'SELLER',
       isVerified:    false,
-      whatsappPhone: '+261330000002',
+      whatsappPhone: production ? null : '+261330000002',
     },
   });
 
@@ -254,7 +254,9 @@ async function main() {
 
   let created = 0;
   for (const data of listings) {
-    await prisma.listing.create({ data });
+    await prisma.listing.create({
+      data: production ? { ...data, title: `Ohatra · ${data.title}`, whatsappContact: null } : data,
+    });
     created++;
   }
 

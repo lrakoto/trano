@@ -1,16 +1,16 @@
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import {
-  View, Text, FlatList, TouchableOpacity, StyleSheet,
+  View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AppHeader } from '../components/AppHeader';
 import { SatelliteThumb } from '../components/SatelliteThumb';
 import { useSaved } from '../context/SavedContext';
 import { useAuth } from '../context/AuthContext';
-import { COLORS } from '../constants';
+import { API_BASE_URL, COLORS } from '../constants';
 import type { RootStackParamList } from '../navigation';
 import type { Listing } from '@trano/shared';
 
@@ -20,8 +20,47 @@ const IMAGE_SIZE = 88;
 
 export function SavedScreen() {
   const navigation        = useNavigation<Nav>();
-  const { user }          = useAuth();
+  const { user, token }   = useAuth();
   const { saved, toggle } = useSaved();
+  const [visible, setVisible] = useState<Listing[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+
+  useFocusEffect(useCallback(() => {
+    const controller = new AbortController();
+    setVisible([]);
+    setFailed(false);
+    if (!token || !saved.length) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    const load = async () => {
+      const visibleById = new Map<string, Listing>();
+      for (let start = 0; start < saved.length; start += 50) {
+        const ids = saved.slice(start, start + 50).map(({ id }) => id).join(',');
+        const result = await fetch(`${API_BASE_URL}/listings/saved?ids=${encodeURIComponent(ids)}`, {
+          signal: controller.signal,
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!result.ok) throw new Error('Could not load saved listings');
+        const data: Listing[] = await result.json();
+        for (const listing of data) visibleById.set(listing.id, listing);
+      }
+      if (!controller.signal.aborted) {
+        setVisible(saved.flatMap(({ id }) => {
+          const listing = visibleById.get(id);
+          return listing ? [listing] : [];
+        }));
+      }
+    };
+    load()
+      .catch(() => { if (!controller.signal.aborted) setFailed(true); })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
+  }, [attempt, saved, token]));
 
   if (!user) {
     return (
@@ -42,7 +81,16 @@ export function SavedScreen() {
     );
   }
 
-  if (saved.length === 0) {
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <AppHeader />
+        <ActivityIndicator style={styles.empty} color={COLORS.primary} />
+      </View>
+    );
+  }
+
+  if (visible.length === 0) {
     return (
       <View style={styles.container}>
         <AppHeader />
@@ -50,8 +98,15 @@ export function SavedScreen() {
           <Ionicons name="heart-outline" size={52} color={COLORS.primaryLight} />
           <Text style={styles.emptyTitle}>Trano Voatahiry</Text>
           <Text style={styles.emptySub}>
-            Ny trano tianao dia hiseho eto.{'\n'}Tsindrio ny ♡ amin'ny lisitra mba hitahiry azy.
+            {failed
+              ? 'Tsy afaka naka ny lisitra voatahiry.'
+              : 'Ny trano tianao dia hiseho eto.\nTsindrio ny ♡ amin’ny lisitra mba hitahiry azy.'}
           </Text>
+          {failed && (
+            <TouchableOpacity style={styles.loginBtn} onPress={() => setAttempt((value) => value + 1)}>
+              <Text style={styles.loginBtnText}>Avereno andramana</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </View>
     );
@@ -60,9 +115,9 @@ export function SavedScreen() {
   return (
     <View style={styles.container}>
       <AppHeader />
-      <Text style={styles.heading}>Voatahiry ({saved.length})</Text>
+      <Text style={styles.heading}>Voatahiry ({visible.length})</Text>
       <FlatList
-        data={saved}
+        data={visible}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}

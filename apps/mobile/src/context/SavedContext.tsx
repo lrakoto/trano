@@ -8,6 +8,7 @@ interface SavedContext {
   saved:   Listing[];
   toggle:  (listing: Listing) => void;
   isSaved: (id: string) => boolean;
+  clear:   () => Promise<void>;
 }
 
 const SavedContext = createContext<SavedContext | null>(null);
@@ -31,9 +32,13 @@ export function SavedProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const isSaved = useCallback((id: string) => saved.some((l) => l.id === id), [saved]);
+  const clear = useCallback(async () => {
+    setSaved([]);
+    await AsyncStorage.removeItem(STORAGE_KEY);
+  }, []);
 
   return (
-    <SavedContext.Provider value={{ saved, toggle, isSaved }}>
+    <SavedContext.Provider value={{ saved, toggle, isSaved, clear }}>
       {children}
     </SavedContext.Provider>
   );

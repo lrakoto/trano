@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   ActivityIndicator, TextInput, Dimensions, Keyboard, Platform, RefreshControl,
@@ -8,12 +8,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import MapView, { Marker, Callout } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { TabParamList } from '../navigation';
 import type { Listing } from '@trano/shared';
 import { AppHeader } from '../components/AppHeader';
 import { SatelliteThumb } from '../components/SatelliteThumb';
+import { useAuth } from '../context/AuthContext';
 import { API_BASE_URL, COLORS, isInMadagascar } from '../constants';
 import type { RootStackParamList } from '../navigation';
 
@@ -33,6 +34,7 @@ export function HomeScreen() {
   const route      = useRoute<RouteProp<TabParamList, 'Home'>>();
   const insets     = useSafeAreaInsets();
   const mapRef     = useRef<MapView>(null);
+  const { token }  = useAuth();
   const TAB_BAR_H  = 38 + insets.bottom;
 
   const cityFilter = (route.params as any)?.cityFilter as string | undefined;
@@ -43,23 +45,47 @@ export function HomeScreen() {
   const [filtered,     setFiltered]     = useState<Listing[]>([]);
   const [loading,      setLoading]      = useState(true);
   const [refreshing,   setRefreshing]   = useState(false);
+  const [loadError,    setLoadError]    = useState(false);
   const [search,       setSearch]       = useState(cityFilter ?? '');
   const [sort,         setSort]         = useState<SortOption>('newest');
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [kbHeight,     setKbHeight]     = useState(0);
 
-  const fetchListings = (isRefresh = false) => {
+  const requestRef = useRef<AbortController | null>(null);
+  const fetchListings = useCallback((isRefresh = false) => {
+    requestRef.current?.abort();
+    const controller = new AbortController();
+    requestRef.current = controller;
+    setLoadError(false);
     if (isRefresh) setRefreshing(true); else setLoading(true);
-    fetch(`${API_BASE_URL}/listings?pageSize=50`)
-      .then((r) => r.json())
-      .then((res) => {
-        const data = res.data ?? [];
-        setListings(data);
+    fetch(`${API_BASE_URL}/listings?pageSize=50`, {
+      signal: controller.signal,
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    })
+      .then((r) => {
+        if (!r.ok) throw new Error('Could not load listings');
+        return r.json();
       })
-      .finally(() => { setLoading(false); setRefreshing(false); });
-  };
+      .then((res) => {
+        if (!controller.signal.aborted) setListings(res.data);
+      })
+      .catch(() => {
+        if (controller.signal.aborted) return;
+        setListings([]);
+        setLoadError(true);
+      })
+      .finally(() => {
+        if (controller.signal.aborted) return;
+        setLoading(false);
+        setRefreshing(false);
+      });
+  }, [token]);
 
-  useEffect(() => { fetchListings(); }, []);
+  useFocusEffect(useCallback(() => {
+    setListings([]);
+    fetchListings();
+    return () => requestRef.current?.abort();
+  }, [fetchListings]));
 
   const cycleSort = () => {
     setSort((prev) =>
@@ -85,7 +111,7 @@ export function HomeScreen() {
         { latitude, longitude, latitudeDelta: 0.2, longitudeDelta: 0.2 },
         800,
       );
-    })();
+    })().catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -196,8 +222,15 @@ export function HomeScreen() {
               <View style={styles.emptyWrap}>
                 <Ionicons name="search-outline" size={32} color={COLORS.border} />
                 <Text style={styles.emptyText}>
-                  {search ? 'Tsy misy voahitsika' : 'Tsy misy lisitra amin\'izao fotoana izao'}
+                  {loadError
+                    ? 'Tsy afaka naka ny lisitra. Andramo indray.'
+                    : search ? 'Tsy misy voahitsika' : 'Tsy misy lisitra amin\'izao fotoana izao'}
                 </Text>
+                {loadError && (
+                  <TouchableOpacity accessibilityRole="button" onPress={() => fetchListings()}>
+                    <Text style={styles.sortBtnText}>Avereno andramana</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             }
           />

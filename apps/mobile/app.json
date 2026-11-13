@@ -29,7 +29,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Mampiasa ny toeranao i Trano mba hametrahana ny lisitranao eo amin'ny sarintany."
+          "locationWhenInUsePermission": "Mampiasa ny toeranao i Trano mba hampisehoana ny toerana misy anao eo amin'ny sarintany sy hanampiana anao hametraka ny toerana misy ny lisitrao."
         }
       ],
       [

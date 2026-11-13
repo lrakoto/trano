@@ -1,12 +1,12 @@
 import React, { useEffect, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, Alert,
-  Animated, Pressable, Dimensions, StatusBar, Platform,
+  Animated, Pressable, Dimensions, StatusBar, Platform, Linking, ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useDrawer } from '../context/DrawerContext';
 import { useAuth } from '../context/AuthContext';
-import { COLORS } from '../constants';
+import { API_BASE_URL, COLORS } from '../constants';
 import type { NavigationContainerRef } from '@react-navigation/native';
 import type { RootStackParamList } from '../navigation';
 
@@ -70,10 +70,20 @@ export function DrawerOverlay({ navRef }: Props) {
     ), 210);
   };
 
+  const openPage = (path: 'privacy' | 'support') => {
+    closeDrawer();
+    Linking.openURL(`${API_BASE_URL}/${path}`).catch(() => {
+      Alert.alert('Tsy nisokatra ilay pejy', 'Andramo indray azafady.');
+    });
+  };
+
   const menuItems: MenuItem[] = [
     { icon: 'add-circle-outline',         label: 'Hanampy lisitra',      onPress: () => go(user ? 'PostListing' : 'Login'), accent: true },
     ...(user ? [{ icon: 'home-outline' as IoniconsName,  label: 'Ny lisitray',          onPress: () => go('MyListings') }] : []),
     { icon: 'heart-outline',              label: 'Ny lisitra voatahiry',  onPress: () => goTab('Saved') },
+    ...(user ? [{ icon: 'person-outline' as IoniconsName, label: 'Kaontiko', onPress: () => go('Account') }] : []),
+    { icon: 'shield-checkmark-outline',    label: 'Politikan’ny fiainana manokana', onPress: () => openPage('privacy') },
+    { icon: 'help-circle-outline',        label: 'Fanampiana', onPress: () => openPage('support') },
     { icon: 'information-circle-outline', label: 'Momba ny Trano',        onPress: handleAbout },
     ...(!user ? [{ icon: 'log-in-outline' as IoniconsName, label: 'Hiditra', onPress: () => go('Login') }] : []),
   ];
@@ -88,41 +98,43 @@ export function DrawerOverlay({ navRef }: Props) {
         style={[styles.drawer, { transform: [{ translateX }] }]}
         pointerEvents="auto"
       >
-        <View style={styles.logoWrap}>
-          <Text style={styles.logoText}>trano</Text>
-          <View style={styles.logoDot} />
-        </View>
-        {user && <Text style={styles.userName} numberOfLines={1}>{user.name}</Text>}
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.drawerContent}>
+          <View style={styles.logoWrap}>
+            <Text style={styles.logoText}>trano</Text>
+            <View style={styles.logoDot} />
+          </View>
+          {user && <Text style={styles.userName} numberOfLines={1}>{user.name}</Text>}
 
-        <View style={styles.divider} />
+          <View style={styles.divider} />
 
-        {menuItems.map((item) => (
-          <TouchableOpacity
-            key={item.label}
-            style={styles.menuItem}
-            onPress={item.onPress}
-            activeOpacity={0.7}
-          >
-            <Ionicons
-              name={item.icon}
-              size={20}
-              color={item.accent ? COLORS.accent : 'rgba(255,255,255,0.72)'}
-            />
-            <Text style={[styles.menuLabel, item.accent && styles.menuLabelAccent]}>
-              {item.label}
-            </Text>
-          </TouchableOpacity>
-        ))}
-
-        {user && (
-          <>
-            <View style={styles.divider} />
-            <TouchableOpacity style={styles.menuItem} onPress={handleLogout} activeOpacity={0.7}>
-              <Ionicons name="log-out-outline" size={20} color="rgba(255,255,255,0.5)" />
-              <Text style={styles.menuLabelMuted}>Hivoaka</Text>
+          {menuItems.map((item) => (
+            <TouchableOpacity
+              key={item.label}
+              style={styles.menuItem}
+              onPress={item.onPress}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name={item.icon}
+                size={20}
+                color={item.accent ? COLORS.accent : 'rgba(255,255,255,0.72)'}
+              />
+              <Text style={[styles.menuLabel, item.accent && styles.menuLabelAccent]}>
+                {item.label}
+              </Text>
             </TouchableOpacity>
-          </>
-        )}
+          ))}
+
+          {user && (
+            <>
+              <View style={styles.divider} />
+              <TouchableOpacity style={styles.menuItem} onPress={handleLogout} activeOpacity={0.7}>
+                <Ionicons name="log-out-outline" size={20} color="rgba(255,255,255,0.5)" />
+                <Text style={styles.menuLabelMuted}>Hivoaka</Text>
+              </TouchableOpacity>
+            </>
+          )}
+        </ScrollView>
       </Animated.View>
     </View>
   );
@@ -144,6 +156,7 @@ const styles = StyleSheet.create({
     shadowOffset:      { width: 4, height: 0 },
     elevation:          12,
   },
+  drawerContent:    { paddingBottom: 24 },
   logoWrap:        { flexDirection: 'row', alignItems: 'flex-end', gap: 1, marginBottom: 2 },
   logoText:        { fontSize: 30, fontWeight: '800', color: COLORS.surface, letterSpacing: -0.5 },
   logoDot:         { width: 5, height: 5, borderRadius: 3, backgroundColor: COLORS.accent, marginBottom: 6 },

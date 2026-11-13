@@ -1,4 +1,4 @@
-import Fastify from 'fastify';
+import Fastify, { FastifyReply, FastifyRequest } from 'fastify';
 import cors from '@fastify/cors';
 import jwt from '@fastify/jwt';
 import multipart from '@fastify/multipart';
@@ -8,6 +8,8 @@ import { authRoutes } from './routes/auth';
 import { listingRoutes } from './routes/listings';
 import { userRoutes } from './routes/users';
 import { imageRoutes } from './routes/images';
+import { prisma } from './lib/prisma';
+import { startR2DeletionWorker } from './lib/r2';
 
 export function buildApp() {
   const app = Fastify({ logger: true });
@@ -39,12 +41,21 @@ export function buildApp() {
   });
 
   // ── Auth hook ─────────────────────────────────────────────────────────────
-  app.decorate('authenticate', async (request: any, reply: any) => {
+  app.decorate('authenticate', async (request: FastifyRequest, reply: FastifyReply) => {
+    let sub: string;
     try {
-      await request.jwtVerify();
+      ({ sub } = await request.jwtVerify<{ sub: string }>());
     } catch {
-      reply.status(401).send({ error: 'Unauthorized' });
+      return reply.status(401).send({ error: 'Unauthorized' });
     }
+    if (typeof sub !== 'string' || !sub) return reply.status(401).send({ error: 'Unauthorized' });
+    const account = await prisma.user.findUnique({
+      where: { id: sub },
+      select: { role: true, isSuspended: true },
+    });
+    if (!account) return reply.status(401).send({ error: 'Unauthorized' });
+    if (account.isSuspended) return reply.status(403).send({ error: 'Account suspended' });
+    request.user = { sub, role: account.role };
   });
 
   // ── Zod validation errors → 400 ──────────────────────────────────────────
@@ -64,6 +75,7 @@ export function buildApp() {
   app.register(listingRoutes, { prefix: '/listings' });
   app.register(userRoutes,    { prefix: '/users' });
   app.register(imageRoutes,   { prefix: '/listings' });
+  startR2DeletionWorker(app);
 
   app.get('/health', async () => ({ status: 'ok' }));
 
@@ -97,7 +109,7 @@ ${body}
   <p class="brand">Trano</p>
   <p>Fampiharana fitadiavana trano any Madagasikara.<br/>
   <span class="muted">A real-estate app for Madagascar: browse homes, land and rentals by city, and contact owners on WhatsApp.</span></p>
-  <p>Available on the App Store for iPhone.</p>`);
+  <p>Built for iPhone.</p>`);
   });
 
   app.get('/support', async (_req, reply) => {
@@ -106,23 +118,33 @@ ${body}
   <h1>Support</h1>
   <p>Questions, problems or feedback about the Trano app? Email <a href="mailto:hello@trano.app">hello@trano.app</a> and we will get back to you.</p>
   <h2>Delete your account</h2>
-  <p>Email <a href="mailto:hello@trano.app">hello@trano.app</a> from the phone number on your account and we will delete your account, your listings and their photos within 30 days.</p>
+  <p>Open the app menu, choose <strong>Kaontiko</strong> (My account), then choose <strong>Fafao ny kaontiko</strong> (Delete my account). Confirm with your password to remove your account and listings. The photos attached to your listings are queued for deletion. If you cannot sign in, contact us for help.</p>
   <h2>Report a listing</h2>
-  <p>Use the report button on a listing in the app. Listings reported several times are taken down for review automatically.</p>`);
+  <p>Sign in and choose <strong>Hitatitra ity lisitra ity</strong> (Report this listing) from the listing. You can also block the owner and manage blocked users from your account. Email support if you need help with a report.</p>`);
+  });
+
+  app.get('/terms', async (_req, reply) => {
+    reply.type('text/html; charset=utf-8');
+    return page('Listing rules', `
+  <h1>Fitsipika momba ny lisitra · Listing rules</h1>
+  <p>Manaova lisitra marina momba ny trano na tany azonao amidy na ampanofaina. Ampiasao ny sary nahazoanao alalana. Voarara ny hosoka, ny fanavakavahana, ny fandrahonana, ny votoaty mamoafady ary ny famoahana ny mombamomba olon-kafa tsy nahazoana alalana.</p>
+  <p>Post accurate property information and use photos you have permission to share. Trano prohibits scams, discrimination, harassment, threats, explicit content, and sharing another person's private information without permission.</p>
+  <p>Trano reviews submissions and reports. We may remove listings or suspend accounts that break these rules. Use the report or block options on a listing, or <a href="/support">contact support</a>.</p>`);
   });
 
   app.get('/privacy', async (_req, reply) => {
     reply.type('text/html; charset=utf-8');
     return page('Privacy Policy', `
   <h1>Privacy Policy</h1>
-  <p><strong>Last updated: October 3, 2026</strong></p>
+  <p><strong>Last updated: November 13, 2026</strong></p>
   <p>Trano ("we", "our", or "us") operates the Trano mobile application. This page explains what information we collect, how we use it, and your rights.</p>
 
   <h2>Information We Collect</h2>
   <ul>
     <li><strong>Account data:</strong> name, phone number, and optional email address provided at registration.</li>
     <li><strong>Listing data:</strong> property details, description, price, photos, location coordinates, and WhatsApp contact number that you voluntarily submit.</li>
-    <li><strong>Device location:</strong> only when you choose to use the "Use my location" feature to pin a listing. We do not track your location in the background.</li>
+    <li><strong>Device location:</strong> with your permission, the app uses your location to center the map and to help you pin a listing. We store the pin you submit with a listing. The app uses location in the foreground.</li>
+    <li><strong>Moderation data:</strong> we store reports and user blocks to review listings and hide content from blocked users.</li>
   </ul>
 
   <h2>How We Use Your Information</h2>
@@ -134,10 +156,10 @@ ${body}
   </ul>
 
   <h2>Data Storage</h2>
-  <p>Account and listing data are stored on servers operated by Render in Frankfurt, Germany. Listing photos are stored with Cloudflare R2. Passwords are hashed using bcrypt and never stored in plain text. Authentication tokens expire after 24 hours.</p>
+  <p>Render hosts account and listing data, and Cloudflare R2 stores listing photos. The app uses the device map provider for map imagery. If you open a listing's WhatsApp link, WhatsApp handles the conversation under its own privacy terms. Passwords are hashed using bcrypt. Authentication tokens expire after 24 hours.</p>
 
   <h2>Your Rights</h2>
-  <p>You may request deletion of your account and all associated data by contacting us at <a href="mailto:hello@trano.app">hello@trano.app</a>. We will action all requests within 30 days.</p>
+  <p>You can delete your account from the app's My account screen. Account data and listings are removed from the service, and listing photos are queued for deletion. You can change location permissions in your device settings. Contact us for help accessing or deleting your data.</p>
 
   <h2>Children</h2>
   <p>Trano is not directed at children under 13. We do not knowingly collect data from children.</p>

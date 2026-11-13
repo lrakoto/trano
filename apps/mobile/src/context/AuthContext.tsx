@@ -14,6 +14,7 @@ interface AuthState {
 interface AuthContext extends AuthState {
   login:    (phone: string, password: string) => Promise<void>;
   register: (params: RegisterParams) => Promise<void>;
+  deleteAccount: (password: string) => Promise<void>;
   logout:   () => Promise<void>;
 }
 
@@ -81,8 +82,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setState({ user: null, token: null, loading: false });
   };
 
+  const deleteAccount = async (password: string) => {
+    const res = await fetch(`${API_BASE_URL}/users/me`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${state.token}`,
+      },
+      body: JSON.stringify({ password }),
+    });
+    if (res.status === 403) throw new Error('Diso ny tenimiafina.');
+    if (res.status === 401) throw new Error('Midira indray, dia andramo indray.');
+    if (!res.ok) throw new Error('Tsy voafafa ny kaonty. Andramo indray.');
+    setState({ user: null, token: null, loading: false });
+    await SecureStore.deleteItemAsync(TOKEN_KEY).catch(() => undefined);
+  };
+
   return (
-    <AuthContext.Provider value={{ ...state, login, register, logout }}>
+    <AuthContext.Provider value={{ ...state, login, register, deleteAccount, logout }}>
       {children}
     </AuthContext.Provider>
   );

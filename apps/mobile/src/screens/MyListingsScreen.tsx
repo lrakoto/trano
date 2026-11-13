@@ -22,6 +22,8 @@ const STATUS_LABEL: Record<string, { label: string; color: string }> = {
   ACTIVE:       { label: 'Mavitrika',     color: COLORS.primaryLight },
   UNDER_REVIEW: { label: 'Voasedra',      color: '#E8A000' },
   INACTIVE:     { label: 'Tsy mavitrika', color: COLORS.textMuted },
+  SOLD:         { label: 'Lafo',         color: COLORS.textMuted },
+  RENTED:       { label: 'Efa voahofa',  color: COLORS.textMuted },
 };
 
 export function MyListingsScreen() {
@@ -33,16 +35,19 @@ export function MyListingsScreen() {
   const loadListings = () => {
     if (!user) return;
     setLoading(true);
-    fetch(`${API_BASE_URL}/users/${user.id}/listings`, {
+    fetch(`${API_BASE_URL}/users/me/listings`, {
       headers: { Authorization: `Bearer ${token}` },
     })
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error('Could not load listings');
+        return r.json();
+      })
       .then(setListings)
       .catch(() => Alert.alert('Diso', 'Tsy afaka naka ny lisitra'))
       .finally(() => setLoading(false));
   };
 
-  useFocusEffect(useCallback(loadListings, [user?.id]));
+  useFocusEffect(useCallback(loadListings, [user?.id, token]));
 
   const handleDelete = (listing: Listing) => {
     Alert.alert(
